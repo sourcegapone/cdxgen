@@ -7,14 +7,18 @@ on:
 
 jobs:
   pkg:
+    if: github.repository == 'CycloneDX/cdxgen'
     # use ubuntu-20.04 due to avoid glic errors
     runs-on: ubuntu-20.04
+    permissions:
+      contents: write
+      packages: write
     steps:
     - uses: actions/checkout@v4
     - name: Use Node.js
       uses: actions/setup-node@v4
       with:
-        node-version: '21.x'
+        node-version: '23.x'
     - name: Install dependencies
       run: |
         sudo apt-get install -y python3.8 python3.8-dev python3-pip python3-testresources python3-setuptools patchelf desktop-file-utils libgdk-pixbuf2.0-dev
@@ -33,7 +37,7 @@ jobs:
       run: |
         zip --junk-paths -r cdxgen-dist.zip cdxgen-latest-x86_64.AppImage
     - name: Release
-      uses: softprops/action-gh-release@v1
+      uses: softprops/action-gh-release@v2
       if: startsWith(github.ref, 'refs/tags/')
       with:
         files: |

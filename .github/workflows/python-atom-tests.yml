@@ -8,10 +8,10 @@ concurrency:
   cancel-in-progress: true
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     strategy:
       matrix:
-        node-version: ['21.x']
+        node-version: ['23.x']
     steps:
       - uses: actions/checkout@v4
         with:
@@ -21,11 +21,11 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
-          java-version: '21'
+          java-version: '23'
       - name: npm install, build and test
         run: |
-          npm install
-          npm run build --if-present
+          corepack enable
+          corepack pnpm install
           mkdir -p repotests
           mkdir -p bomresults
         env:
