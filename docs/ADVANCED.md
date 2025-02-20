@@ -1,5 +1,55 @@
 # Advanced Usage
 
+## Exclude project types, files, and directories
+
+To exclude specific [project types](https://cyclonedx.github.io/cdxgen/#/PROJECT_TYPES) from the BOM, use the `--exclude-type` argument. Multiple values are allowed.
+
+Example:
+
+Generate an SBOM for all types except js
+
+```shell
+--exclude-type js
+```
+
+Generate an SBOM for all types except github and dotnet
+
+```shell
+--exclude-type github --exclude-type dotnet
+```
+
+Use the argument `--exclude` to provide a glob pattern for files and directories to exclude from the BOM. Multiple values are allowed.
+
+Example:
+
+Exclude quickstarts directory.
+
+```shell
+--exclude "**/quickstarts/**"
+```
+
+Brace expansion is supported. `{openshift,kubernetes}-maven-plugin` in the below example, expands to `openshift-maven-plugin` and `kubernetes-maven-plugin`.
+
+```shell
+--exclude "**/quickstarts/**" --exclude "**/{openshift,kubernetes}-maven-plugin/**"
+```
+
+### Excluding packages using package manager configuration
+
+Some package managers support filtering dependencies. For example, maven `dependency:tree` command supports [filtering](https://maven.apache.org/plugins/maven-dependency-plugin/examples/filtering-the-dependency-tree.html). It is possible to use some of the existing [environment variables](./ENV.md) to utilize these features.
+
+Java maven example:
+
+```shell
+export MVN_ARGS="-Dexcludes=:::*-SNAPSHOT"
+```
+
+Gradle example:
+
+```shell
+export GRADLE_ARGS="--configuration runtimeClasspath"
+```
+
 ## Filtering components
 
 cdxgen can filter the components and the dependency tree before writing to a BOM json file. Three kinds of filters are allowed:
@@ -21,9 +71,9 @@ Languages supported:
 
 ### Purl and properties filter
 
-Use `--filter` to filter components containing the string in the purl or components.properties.value. Filters are case-insensitive.
+Use `--filter` to filter components containing the string in the purl or components.properties.value. Since the purl string includes the namespace (group), you can use this argument as a namespace filter too. Filters are case-insensitive.
 
-Example 1: Filter all "springframework" packages
+Example 1: Filter all "springframework" packages (purl or namespace)
 
 ```shell
 cdxgen -t java -o /tmp/bom.json -p --filter org.springframework
@@ -42,6 +92,44 @@ Use `--only` to include only those components containing the string in the purl.
 ```shell
 cdxgen -t java -o /tmp/bom.json -p --only org.springframework
 ```
+
+### Minimum confidence filter
+
+Use `--min-confidence` with a value between 0 and 1 to filter components based on the confidence of their purl [identify](https://cyclonedx.org/docs/1.6/json/#components_items_evidence_identity_oneOf_i0_items_field). The logic involves looking for `field=purl` in `evidence.identity` and collecting the maximum `confidence` value. This is then compared against the minimum confidence passed as an argument.
+
+```shell
+cdxgen -t c . --min-confidence 0.1
+```
+
+The above would filter out all the zero confidence components in c/c++, so use it with caution.
+
+### Analysis technique filter
+
+Use `--technique` to list the techniques that cdxgen is allowed to use for the xBOM generation. Leaving this argument or using the value `auto` enables default behaviour.
+
+Example 1 - only allow manifest-analysis:
+
+```shell
+cdxgen -t c . --technique manifest-analysis
+```
+
+Example 2 - allow manifest-analysis and source-code-analysis:
+
+```shell
+cdxgen -t c . --technique manifest-analysis --technique source-code-analysis
+```
+
+List of supported techniques:
+
+- auto (default)
+- source-code-analysis
+- binary-analysis
+- manifest-analysis
+- hash-comparison
+- instrumentation
+- filename
+
+Currently, this capability is implemented as a filter during post-processing, so unlikely to yield any performance benefits.
 
 ## Automatic compositions
 
@@ -113,7 +201,7 @@ Evinse (Evinse Verification Is Nearly SBOM Evidence) is a new command with cdxge
 
 ### Pre-requisites
 
-- Java > 17 installed
+- Java > 21 installed
 - Application source code
 - Input SBOM in CycloneDX >1.5 format. Use cdxgen to generate one.
 
@@ -319,7 +407,7 @@ cdxgen --author "OWASP Foundation" --author "Apache Foundation" -t java ...
 
 ## Generate bash/zsh command completions
 
-Run the commands such as cdxgen, evinse etc with completion as the argument.
+Run the commands such as cdxgen, evinse, etc with completion as the argument.
 
 ```shell
 cdxgen completion >> ~/.zshrc
@@ -342,7 +430,48 @@ With profiles, cdxgen can generate a BOM that is optimized for a specific use ca
 
 ## BOM lifecycles
 
-By default, cdxgen attempts to generate a BOM for the `build` lifecycle [phase](https://cyclonedx.org/docs/1.5/json/#tab-pane_metadata_lifecycles_items_oneOf_i0) for applications and `post-build` phase for container images. Using the argument, `--no-install-deps` it is possible to generate `pre-build` BOM for certain languages and ecosystems (Eg: Python) by disabling the package installation feature.
+By default, cdxgen attempts to generate a BOM for the `build` lifecycle [phase](https://cyclonedx.org/docs/1.5/json/#tab-pane_metadata_lifecycles_items_oneOf_i0) for applications and `post-build` phase for container images. Using the argument, `--no-install-deps` it is possible to generate `pre-build` BOM for certain languages and ecosystems (Eg: Python) by disabling the package installation feature. Or explicitly pass `--lifecycle post-build` to generate an SBOM for android, dotnet, and go binaries.
+
+Example:
+
+```shell
+cdxgen -t android --lifecycle post-build -o bom.json <path to apks>
+```
+
+```shell
+cdxgen -t dotnet --lifecycle post-build -o bom.json <path to dotnet binaries>
+```
+
+```shell
+cdxgen -t go --lifecycle post-build -o bom.json <path to go binaries>
+```
+
+## Legacy dotnet and Java projects
+
+To obtain transitive dependencies and a complete dependency tree for dotnet projects, `dotnet restore` command needs to be executed. Recent versions of cdxgen would attempt to restore all the solution and .csproj files when there are no `project.assets.json` files found.
+
+This, however, requires the correct version of dotnet SDK to be installed. The official container image bundles version 8.0 of the SDK.
+
+```shell
+docker run --rm -v /tmp:/tmp -v $(pwd):/app:rw -it ghcr.io/cyclonedx/cdxgen -r /app -o bom.json -t dotnet
+```
+
+If the project requires a different version of the SDK, such as .Net core 3.1 or dotnet 6.0, then try with the below custom [images](https://github.com/CycloneDX/cdxgen/ci/base-images).
+
+```shell
+docker run --rm -v /tmp:/tmp -v $(pwd):/app:rw -it ghcr.io/cyclonedx/cdxgen-dotnet:v11 -r /app -o bom.json -t dotnet
+```
+
+If the project requires legacy frameworks such as .Net Framework 4.6/4.7, then a Windows operating system or container is required to generate the SBOM correctly. A workaround is to commit the project.assets.json and the lock files to the repository from Windows and run cdxgen from Linux as normal.
+
+For legacy Java projects, use the custom images `ghcr.io/cyclonedx/cdxgen-java11:v11` (Java 11) or `ghcr.io/cyclonedx/cdxgen-java17:v11` (Java 17). Alternatively, use the CLI arguments as shown.
+
+```shell
+cdxgen -t java11
+cdxgen -t java17
+```
+
+[sdkman](https://sdkman.io) must be installed and setup for these arguments to work.
 
 ## Nydus - next-generation container image
 
@@ -360,9 +489,13 @@ Refer to the nydus-demo.yml workflow for an example github action that demonstra
 sudo nerdctl --snapshotter nydus run --rm -v $HOME/.m2:/root/.m2 -v $(pwd):/app ghcr.io/cyclonedx/cdxgen:master-nydus -p -t java /app
 ```
 
+## Lima VM usage
+
+Refer to the dedicated [readme](../contrib/lima/README.md). Rancher Desktop on macOS with nerdctl is supported by default.
+
 ## Export as protobuf binary
 
-Pass the argument `--export-proto` to serialize and export the BOM as protobuf binary. Only the spec version 1.5 is supported in this mode.
+Pass the argument `--export-proto` to serialize and export the BOM as a protobuf binary. Only the spec version 1.5 is supported in this mode.
 
 ```shell
 --export-proto --proto-bin-file bom.cdx.bin
@@ -455,3 +588,55 @@ Example:
     }
   ]
 ```
+
+## Generate Cryptography Bill of Materials (CBOM)
+
+Use the `cbom` alias to generate a CBOM. This is currently supported only for Java and Python projects.
+
+```shell
+cbom -t java
+# cdxgen -t java --include-crypto -o bom.json --spec-version 1.6 .
+```
+
+```shell
+cbom -t python
+# cdxgen -t python --include-crypto -o bom.json --spec-version .
+```
+
+Using the `cbom` alias sets the following options:
+
+- includeCrypto: true
+- includeFormulation: true
+- evidence: true
+- specVersion: 1.6
+
+## Custom Container Images
+
+Below table summarizes all available container image versions. These images include additional language-specific build tools and development libraries to enable automatic restore and build operations.
+
+| Language | Version                  | Container Image Tags                                                              | Comments                                                                                                                    |
+|----------|--------------------------|-----------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------|
+| Java     | 23                       | ghcr.io/cyclonedx/cdxgen:master                                                   | Default all-in-one container image with all the latest and greatest tools with Node 23 runtime.                             |
+| Java     | 23                       | ghcr.io/cyclonedx/cdxgen-deno:master                                              | Default all-in-one container image with all the latest and greatest tools with deno runtime.                                |
+| Java     | 11                       | ghcr.io/cyclonedx/cdxgen-java11-slim:v11, ghcr.io/cyclonedx/cdxgen-java11:v11     | Java 11 version with and without Android 33 SDK.                                                                            |
+| Java     | 17                       | ghcr.io/cyclonedx/cdxgen-java17-slim:v11, ghcr.io/cyclonedx/cdxgen-java17:v11     | Java 17 version with and without Android 34 SDK.                                                                            |
+| Dotnet   | .Net Framework 4.6 - 4.8 | ghcr.io/cyclonedx/cdxgen-debian-dotnet6:v11, ghcr.io/cyclonedx/cdxgen-dotnet6:v11 | .Net Framework                                                                                                              |
+| Dotnet   | .Net Core 3.1            | ghcr.io/cyclonedx/cdxgen-debian-dotnet6:v11, ghcr.io/cyclonedx/cdxgen-dotnet6:v11 | .Net Core 3.1                                                                                                               |
+| Dotnet   | .Net 6                   | ghcr.io/cyclonedx/cdxgen-debian-dotnet6:v11, ghcr.io/cyclonedx/cdxgen-dotnet6:v11 | .Net 6                                                                                                                      |
+| Dotnet   | .Net 7                   | ghcr.io/cyclonedx/cdxgen-dotnet7:v11                                              | .Net 7                                                                                                                      |
+| Dotnet   | .Net 8                   | ghcr.io/cyclonedx/cdxgen-debian-dotnet8:v11, ghcr.io/cyclonedx/cdxgen-dotnet8:v11 | .Net 8                                                                                                                      |
+| Dotnet   | .Net 9                   | ghcr.io/cyclonedx/cdxgen-debian-dotnet9:v11, ghcr.io/cyclonedx/cdxgen-dotnet9:v11 | .Net 9                                                                                                                      |
+| Python   | 3.6                      | ghcr.io/cyclonedx/cdxgen-python36:v11                                             | No dependency tree                                                                                                          |
+| Python   | 3.9                      | ghcr.io/cyclonedx/cdxgen-python39:v11                                             |                                                                                                                             |
+| Python   | 3.10                     | ghcr.io/cyclonedx/cdxgen-python310:v11                                            |                                                                                                                             |
+| Python   | 3.11                     | ghcr.io/cyclonedx/cdxgen-python311:v11                                            |                                                                                                                             |
+| Python   | 3.12                     | ghcr.io/cyclonedx/cdxgen-python312:v11                                            |                                                                                                                             |
+| Node.js  | 20                       | ghcr.io/cyclonedx/cdxgen-node20:v11                                               | Use `--platform=linux/amd64` in case of `npm install` errors.                                                               |
+| Node.js  | 23                       | ghcr.io/cyclonedx/cdxgen:master                                                   | Supports automatic node installation. Example: Pass `-t node20` to install node 20.                                         |
+| Ruby     | 3.3.6                    | ghcr.io/cyclonedx/cdxgen-debian-ruby33:v11                                        | Supports automatic Ruby installation for 3.3.x. Example: Pass `-t ruby3.3.1` to install Ruby 3.3.1.                         |
+| Ruby     | 3.4.1                    | ghcr.io/cyclonedx/cdxgen-debian-ruby34:v11                                        | Supports automatic Ruby installation for 3.4.x. Example: Pass `-t ruby3.4.0` to install Ruby 3.4.0.                         |
+| Ruby     | 2.5.0                    | ghcr.io/cyclonedx/cdxgen-ruby25:v11                                               | Supports automatic Ruby installation for 2.5.x. Example: Pass `-t ruby2.5.1` to install Ruby 2.5.1.                         |
+| Ruby     | 2.6.10                   | ghcr.io/cyclonedx/cdxgen-debian-ruby26:v11                                        | Supports automatic Ruby installation for 2.6.x. Example: Pass `-t ruby2.6.1` to install Ruby 2.6.1.                         |
+| Ruby     | 1.8.x                    | ghcr.io/cyclonedx/debian-ruby18:master                                            | Base image for `bundle install` only. No cdxgen equivalent with Ruby 1.8.x. `--deep` mode and research profile unsupported. |
+
+Replace `:v11` with a release version tag or sha256 hash for fine-grained control over the image tag.

@@ -12,10 +12,11 @@ concurrency:
 jobs:
   linux-tests:
     strategy:
+      fail-fast: true
       matrix:
-        os: [ubuntu-latest]
-        node-version: ['21.x']
-        java-version: ['21']
+        os: ['ubuntu-24.04', 'ubuntu-24.04-arm']
+        node-version: ['23.x']
+        java-version: ['23']
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
@@ -24,7 +25,7 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: '3.11'
       - name: Set up JDK
@@ -32,10 +33,106 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: ${{ matrix.java-version }}
+      - name: Trim CI agent
+        run: |
+          chmod +x contrib/free_disk_space.sh
+          ./contrib/free_disk_space.sh
       - name: npm install, build and test
         run: |
-          npm install
-          npm test
+          npm install --global corepack@latest
+          corepack enable
+          corepack pnpm install --config.strict-dep-builds=true --package-import-method copy
+          corepack pnpm test
+          mkdir -p bomresults repotests
+        env:
+          CI: true
+          CDXGEN_TEMP_DIR: ${{ runner.temp }}/cdxgen-dockertests
+      - uses: actions/checkout@v4
+        with:
+          repository: 'grafana-operator/grafana-operator'
+          path: 'repotests/grafana-operator'
+      - name: dockertests
+        if: matrix.os == 'ubuntu-24.04'
+        run: |
+          bin/cdxgen.js ubuntu:latest -t docker -o bomresults/bom-ubuntu.json --fail-on-error
+          docker rmi ubuntu:latest
+          bin/cdxgen.js alpine:latest -t docker -o bomresults/bom-alpine.json --fail-on-error
+          docker rmi alpine:latest
+          bin/cdxgen.js almalinux:9.4-minimal -t docker -o bomresults/bom-almalinux.json --fail-on-error
+          docker rmi almalinux:9.4-minimal
+          bin/cdxgen.js centos:latest -t oci -o bomresults/bom-centos.json --fail-on-error
+          docker rmi centos:latest
+          bin/cdxgen.js phpmyadmin@sha256:1092481630056189e43cc0fe66fd01defcc9334d78ab4611b22f65e9a39869bd -o bomresults/bom-phpmyadmin.json --fail-on-error
+          docker rmi phpmyadmin@sha256:1092481630056189e43cc0fe66fd01defcc9334d78ab4611b22f65e9a39869bd
+          bin/cdxgen.js shiftleft/scan-slim -o bomresults/bom-scanslim.json -t container --fail-on-error
+          docker rmi shiftleft/scan-slim
+          bin/cdxgen.js redmine@sha256:a5c5f8a64a0d9a436a0a6941bc3fb156be0c89996add834fe33b66ebeed2439e -o bomresults/bom-redmine.json --fail-on-error
+          docker rmi redmine@sha256:a5c5f8a64a0d9a436a0a6941bc3fb156be0c89996add834fe33b66ebeed2439e
+          bin/cdxgen.js rocket.chat@sha256:379f7afa0e67497c363ac9a9b3e7e6a6d31deee228233307c987e4a0c68b28e6 -o bomresults/bom-rocket.json --fail-on-error
+          docker rmi rocket.chat@sha256:379f7afa0e67497c363ac9a9b3e7e6a6d31deee228233307c987e4a0c68b28e6
+          bin/cdxgen.js sonarqube@sha256:7c0edcb99c964984db6d24330db33bb12de1e8ae0d5974d77640b1efea1483d1 -o bomresults/bom-sonar.json --fail-on-error
+          docker rmi sonarqube@sha256:7c0edcb99c964984db6d24330db33bb12de1e8ae0d5974d77640b1efea1483d1
+          bin/cdxgen.js zookeeper@sha256:5bf00616677db5ef57d8a2da7c5dadf67f1a6be54b0c33a79be3332c9c80aeb6 -o bomresults/bom-zoo.json --fail-on-error
+          docker rmi zookeeper@sha256:5bf00616677db5ef57d8a2da7c5dadf67f1a6be54b0c33a79be3332c9c80aeb6
+          docker pull shiftleft/scan-slim:latest
+          docker save shiftleft/scan-slim:latest -o /tmp/scanslim.tar
+          docker rmi shiftleft/scan-slim:latest
+          bin/cdxgen.js /tmp/scanslim.tar -o bomresults/bom-scanarch.json --fail-on-error
+          bin/cdxgen.js -t docker-compose test/data -o bomresults/bom-dc.json --fail-on-error
+          bin/cdxgen.js -t operator repotests/grafana-operator -o bomresults/bom-op.json --fail-on-error
+          rm /tmp/scanslim.tar
+          ls -ltr bomresults
+        env:
+          CDXGEN_DEBUG_MODE: debug
+      - name: dockertests arm
+        if: matrix.os == 'ubuntu-24.04-arm'
+        run: |
+          bin/cdxgen.js ubuntu:latest -t docker -o bomresults/bom-ubuntu.json --fail-on-error
+          docker rmi ubuntu:latest
+          bin/cdxgen.js alpine:latest -t docker -o bomresults/bom-alpine.json --fail-on-error
+          docker rmi alpine:latest
+          bin/cdxgen.js almalinux:9.4-minimal -t docker -o bomresults/bom-almalinux.json --fail-on-error
+          docker rmi almalinux:9.4-minimal
+          bin/cdxgen.js centos:latest -t oci -o bomresults/bom-centos.json --fail-on-error
+          docker rmi centos:latest
+          bin/cdxgen.js -t docker-compose test/data -o bomresults/bom-dc.json --fail-on-error
+          bin/cdxgen.js -t operator repotests/grafana-operator -o bomresults/bom-op.json --fail-on-error
+          ls -ltr bomresults
+        env:
+          CDXGEN_DEBUG_MODE: debug
+  linux-dockertar-tests:
+    strategy:
+      fail-fast: true
+      matrix:
+        os: ['ubuntu-24.04', 'ubuntu-24.04-arm']
+        node-version: ['23.x']
+        java-version: ['23']
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: ${{ matrix.java-version }}
+      - name: Trim CI agent
+        run: |
+          chmod +x contrib/free_disk_space.sh
+          ./contrib/free_disk_space.sh
+      - name: npm install, build and test
+        run: |
+          npm install --global corepack@latest
+          corepack enable
+          corepack pnpm install --config.strict-dep-builds=true --package-import-method copy
+          corepack pnpm test
           mkdir -p bomresults repotests
         env:
           CI: true
@@ -44,30 +141,27 @@ jobs:
           repository: 'grafana-operator/grafana-operator'
           path: 'repotests/grafana-operator'
       - name: dockertests
+        if: matrix.os == 'ubuntu-24.04'
         run: |
-          bin/cdxgen.js ubuntu:latest -t docker -o bomresults/bom-ubuntu.json
-          bin/cdxgen.js almalinux:9.2-minimal -t docker -o bomresults/bom-almalinux.json
-          bin/cdxgen.js centos:latest -t docker -o bomresults/bom-centos.json
-          bin/cdxgen.js phpmyadmin@sha256:1092481630056189e43cc0fe66fd01defcc9334d78ab4611b22f65e9a39869bd -o bomresults/bom-phpmyadmin.json --validate
-          bin/cdxgen.js shiftleft/scan-slim -o bomresults/bom-scanslim.json -t docker --validate
-          bin/cdxgen.js redmine@sha256:a5c5f8a64a0d9a436a0a6941bc3fb156be0c89996add834fe33b66ebeed2439e -o bomresults/bom-redmine.json --validate
-          bin/cdxgen.js rocket.chat@sha256:379f7afa0e67497c363ac9a9b3e7e6a6d31deee228233307c987e4a0c68b28e6 -o bomresults/bom-rocket.json --validate
-          bin/cdxgen.js sonarqube@sha256:7c0edcb99c964984db6d24330db33bb12de1e8ae0d5974d77640b1efea1483d1 -o bomresults/bom-sonar.json --validate
-          bin/cdxgen.js zookeeper@sha256:5bf00616677db5ef57d8a2da7c5dadf67f1a6be54b0c33a79be3332c9c80aeb6 -o bomresults/bom-zoo.json --validate
-          docker pull shiftleft/scan-slim:latest
-          docker save -o /tmp/scanslim.tar shiftleft/scan-slim:latest
-          bin/cdxgen.js /tmp/scanslim.tar -o bomresults/bom-scanarch.json --validate
-          bin/cdxgen.js -t docker-compose test/data -o bomresults/bom-dc.json --validate
-          bin/cdxgen.js -t operator repotests/grafana-operator -o bomresults/bom-op.json --validate
+          docker pull elasticsearch@sha256:3686a5757ed46c9dbcf00f6f71fce48ffc5413b193a80d1c46a21e7aad4c53ad
+          docker save -o /tmp/elastic.tar elasticsearch@sha256:3686a5757ed46c9dbcf00f6f71fce48ffc5413b193a80d1c46a21e7aad4c53ad
+          docker rmi elasticsearch@sha256:3686a5757ed46c9dbcf00f6f71fce48ffc5413b193a80d1c46a21e7aad4c53ad
+          bin/cdxgen.js /tmp/elastic.tar -t docker -o bomresults/bom-elastic.tar.json --fail-on-error
+          docker pull alpine:latest
+          docker save -o /tmp/alpine.tar alpine:latest
+          docker rmi alpine:latest
+          bin/cdxgen.js /tmp/alpine.tar -t docker -o bomresults/bom-alpine.tar.json --fail-on-error
           ls -ltr bomresults
-
+        env:
+          CDXGEN_DEBUG_MODE: debug
   os-tests:
-    runs-on: ubuntu-latest
-
     strategy:
+      fail-fast: true
       matrix:
-        node-version: ['21.x']
-        java-version: ['21']
+        node-version: ['23.x']
+        java-version: ['23']
+        os: [ubuntu-24.04, ubuntu-24.04-arm]
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
       - name: Use Node.js ${{ matrix.node-version }}
@@ -75,7 +169,7 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: '3.11'
       - name: Set up JDK
@@ -83,18 +177,25 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: ${{ matrix.java-version }}
+      - name: Trim CI agent
+        run: |
+          chmod +x contrib/free_disk_space.sh
+          ./contrib/free_disk_space.sh
       - name: npm install, build and test
         run: |
-          npm install
+          npm install --global corepack@latest
+          corepack enable
+          corepack pnpm install --config.strict-dep-builds=true --package-import-method copy
           mkdir -p bomresults
         env:
           CI: true
       - name: ostests
         run: |
-          bin/cdxgen.js -t os -o bomresults/bom-os.json --validate
+          bin/cdxgen.js -t os -o bomresults/bom-os.json --fail-on-error
         env:
           CDXGEN_DEBUG_MODE: debug
       - uses: actions/upload-artifact@v4
+        if: matrix.os == 'ubuntu-24.04-arm'
         with:
           name: bomresults-os
           path: bomresults
@@ -103,9 +204,10 @@ jobs:
     runs-on: windows-latest
 
     strategy:
+      fail-fast: true
       matrix:
-        node-version: ['21.x']
-        java-version: ['21']
+        node-version: ['23.x']
+        java-version: ['23']
     steps:
       - uses: actions/checkout@v4
       - name: Use Node.js ${{ matrix.node-version }}
@@ -113,7 +215,7 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: '3.11'
       - name: Set up JDK
@@ -123,13 +225,15 @@ jobs:
           java-version: ${{ matrix.java-version }}
       - name: npm install, build
         run: |
-          npm install
+          npm install --global corepack@latest
+          corepack enable
+          corepack pnpm install --config.strict-dep-builds=true --package-import-method copy
           mkdir bomresults
         env:
           CI: true
       - name: wintests
         run: |
-          node bin/cdxgen.js -t os -o bomresults/bom-win.json --validate
+          node bin/cdxgen.js -t os -o bomresults/bom-win.json --fail-on-error
           dir bomresults
         env:
           CDXGEN_DEBUG_MODE: debug

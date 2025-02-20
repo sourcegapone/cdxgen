@@ -1,0 +1,26 @@
+name: Biome
+
+on:
+  push:
+    branches:
+      - master
+    tags:
+    - 'v*'
+  workflow_dispatch:
+  pull_request:
+jobs:
+  lint:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+      - name: Check Linting
+        run: |
+          npm install --global corepack@latest
+          corepack enable
+          corepack pnpm install --config.strict-dep-builds=true
+          corepack pnpm run lint:check
+        env:
+          CI: true

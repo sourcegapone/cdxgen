@@ -1,82 +1,54 @@
-# CycloneDX Generator
+[![JSR][badge-jsr]][jsr-cdxgen]
+[![NPM][badge-npm]][npmjs-cdxgen]
+[![GitHub Releases][badge-github-releases]][github-releases]
+[![NPM Downloads][badge-npm-downloads]][npmjs-cdxgen]
+[![GitHub License][badge-github-license]][github-license]
+[![GitHub Contributors][badge-github-contributors]][github-contributors]
+[![SWH][badge-swh]][swh-cdxgen]
 
-![cdxgen logo](cdxgen.png)
+# CycloneDX Generator (cdxgen)
 
-cdxgen is a CLI tool, library, [REPL](./ADVANCED.md), and server to create a valid and compliant [CycloneDX][cyclonedx-homepage] Software Bill of Materials (SBOM) containing an aggregate of all project dependencies for C/C++, Node.js, PHP, Python, Ruby, Rust, Java, .Net, Dart, Haskell, Elixir, and Go projects in JSON format. CycloneDX 1.5 is a lightweight SBOM specification that is easily created, human and machine-readable, and simple to parse.
+![cdxgen logo](./docs/_media/cdxgen.png)
 
-When used with plugins, cdxgen could generate an OBOM for Linux docker images and even VMs running Linux or Windows operating systems. cdxgen also includes an evinse tool to generate component evidence and SaaSBOM for some languages.
+cdxgen is a CLI tool, library, [REPL](./ADVANCED.md), and server to create a valid and compliant [CycloneDX][cyclonedx-homepage] Bill of Materials (BOM) containing an aggregate of all project dependencies in JSON format. CycloneDX is a full-stack BOM specification that is easily created, human and machine-readable, and simple to parse. The tool supports CycloneDX specification versions from 1.4 - 1.6.
+
+Supported BOM formats:
+
+- Software (SBOM) - For many languages and container images.
+- Cryptography (CBOM) - For Java and Python projects.
+- Operations (OBOM) - For Linux container images and VMs running Linux or Windows operating systems.
+- Software-as-a-Service (SaaSBOM) - For Java, Python, JavaScript, TypeScript, and PHP projects.
+- Attestations (CDXA) - Generate SBOM with templates for multiple standards. Sign the BOM document at a granular level to improve authenticity.
+- Vulnerability Disclosure Report (VDR) - Use cdxgen with [OWASP depscan](https://github.com/owasp-dep-scan/dep-scan) to automate the generation of VDR at scale.
 
 ## Why cdxgen?
 
-Most SBOM tools are like simple barcode scanners. For easy applications, they can parse a few package manifests and create a list of components only based on these files without any deep inspection. Further, a typical application might have several repos, components, and libraries with complex build requirements. Traditional techniques to generate an SBOM per language or package manifest either do not work in enterprise environments or don't provide the confidence required for both compliance and automated analysis. So we built cdxgen - the universal polyglot SBOM generator that is user-friendly, precise and comprehensive!
+Most SBOM tools are like simple barcode scanners. For easy applications, they can parse a few package manifests and create a list of components only based on these files without any deep inspection. Further, a typical application might have several repos, components, and libraries with complex build requirements. Traditional techniques to generate an SBOM per language or package manifest either do not work in enterprise environments or don't provide the confidence required for both compliance and automated analysis. So we built cdxgen - the universal polyglot SBOM generator that is user-friendly, precise, and comprehensive!
 
-<img src="./docs/why-cdxgen.jpg" alt="why cdxgen" width="256">
+<img src="./docs/_media/why-cdxgen.jpg" alt="why cdxgen" width="256">
 
-## Supported languages and package format
+Our philosophy:
 
-| Language/Platform               | Package format                                                                                                    | Transitive dependencies                                                                           | Evidence |
-| ------------------------------- | ----------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- | -------- |
-| Node.js                         | npm-shrinkwrap.json, package-lock.json, pnpm-lock.yaml, yarn.lock, rush.js, bower.json, .min.js                   | Yes except .min.js                                                                                | Yes      |
-| Java                            | maven (pom.xml [1]), gradle (build.gradle, .kts), scala (sbt), bazel                                              | Yes unless pom.xml is manually parsed due to unavailability of maven or errors                    | Yes      |
-| PHP                             | composer.lock                                                                                                     | Yes                                                                                               | Yes      |
-| Python                          | pyproject.toml, setup.py, requirements.txt [2], Pipfile.lock, poetry.lock, pdm.lock, bdist_wheel, .whl, .egg-info | Yes using the automatic pip install/freeze. When disabled, only with Pipfile.lock and poetry.lock | Yes      |
-| Go                              | binary, go.mod, go.sum, Gopkg.lock                                                                                | Yes except binary                                                                                 | Yes      |
-| Ruby                            | Gemfile.lock, gemspec                                                                                             | Only for Gemfile.lock                                                                             |          |
-| Rust                            | binary, Cargo.toml, Cargo.lock                                                                                    | Only for Cargo.lock                                                                               |          |
-| .Net                            | .csproj, .vbproj, .fsproj, packages.config, project.assets.json [3], packages.lock.json, .nupkg, paket.lock       | Only for project.assets.json, packages.lock.json, paket.lock                                      |          |
-| Dart                            | pubspec.lock, pubspec.yaml                                                                                        | Only for pubspec.lock                                                                             |          |
-| Haskell                         | cabal.project.freeze                                                                                              | Yes                                                                                               |          |
-| Elixir                          | mix.lock                                                                                                          | Yes                                                                                               |          |
-| C/C++/Objective C/C++11         | conan.lock, conanfile.txt, \*.cmake, CMakeLists.txt, meson.build, codebase without package managers!              | Yes only for conan.lock. Best effort basis for cmake without version numbers.                     | Yes      |
-| Clojure                         | Clojure CLI (deps.edn), Leiningen (project.clj)                                                                   | Yes unless the files are parsed manually due to lack of clojure cli or leiningen command          |          |
-| Swift                           | Package.resolved, Package.swift (swiftpm)                                                                         | Yes                                                                                               |          |
-| Docker / oci image              | All supported languages. Linux OS packages with plugins [4]                                                       | Best effort based on lock files                                                                   | Yes      |
-| GitHub Actions                  | .github/workflows/\*.yml                                                                                          | N/A                                                                                               | Yes      |
-| Linux                           | All supported languages. Linux OS packages with plugins [5]                                                       | Best effort based on lock files                                                                   | Yes      |
-| Windows                         | All supported languages. OS packages with best effort [5]                                                         | Best effort based on lock files                                                                   | Yes      |
-| Jenkins Plugins                 | .hpi files                                                                                                        |                                                                                                   | Yes      |
-| Helm Charts                     | .yaml                                                                                                             | N/A                                                                                               |          |
-| Skaffold                        | .yaml                                                                                                             | N/A                                                                                               |          |
-| kustomization                   | .yaml                                                                                                             | N/A                                                                                               |          |
-| Tekton tasks                    | .yaml                                                                                                             | N/A                                                                                               |          |
-| Kubernetes                      | .yaml                                                                                                             | N/A                                                                                               |          |
-| Maven Cache                     | $HOME/.m2/repository/\*\*/\*.jar                                                                                  | N/A                                                                                               |          |
-| SBT Cache                       | $HOME/.ivy2/cache/\*\*/\*.jar                                                                                     | N/A                                                                                               |          |
-| Gradle Cache                    | $HOME/caches/modules-2/files-2.1/\*\*/\*.jar                                                                      | N/A                                                                                               |          |
-| Helm Index                      | $HOME/.cache/helm/repository/\*\*/\*.yaml                                                                         | N/A                                                                                               |          |
-| Docker compose                  | docker-compose\*.yml. Images would also be scanned.                                                               | N/A                                                                                               |          |
-| Dockerfile                      | `*Dockerfile*` Images would also be scanned.                                                                      | N/A                                                                                               |          |
-| Containerfile                   | `*Containerfile*`. Images would also be scanned.                                                                  | N/A                                                                                               |          |
-| Bitbucket Pipelines             | `bitbucket-pipelines.yml` images and pipes would also be scanned.                                                 | N/A                                                                                               |          |
-| Google CloudBuild configuration | cloudbuild.yaml                                                                                                   | N/A                                                                                               |          |
-| OpenAPI                         | openapi\*.json, openapi\*.yaml                                                                                    | N/A                                                                                               |          |
+- Explainability: Don't list, but explain with evidence.
+- Precision: Try using multiple techniques to improve precision, even if it takes extra time.
+- Personas: Cater to the needs of a range of personas such as security researchers, compliance auditors, developers, and SOC.
+- Lifecycle: Support BOM generation for various product lifecycles.
+- Machine Learning: Optimize the generated data for Machine Learning (ML) purposes by considering the various model properties.
 
-NOTE:
+## Documentation
 
-- Apache maven 3.x is required for parsing pom.xml
-- gradle or gradlew is required to parse gradle projects
-- sbt is required for parsing scala sbt projects. Only scala 2.10 + sbt 0.13.6+ and 2.12 + sbt 1.0+ are currently supported.
-  - Alternatively, create a lock file using sbt-dependency-lock [plugin](https://github.com/stringbean/sbt-dependency-lock)
+Please visit our [GPT app][cdxgen-gpt] or the [documentation site][docs-homepage] for detailed usage, tutorials, and support documentation.
 
-Footnotes:
+Sections include:
 
-- [1] - For multi-module applications, the BOM file could include components not included in the packaged war or ear file.
-- [2] - Pip freeze is automatically performed to improve precision. Requires virtual environment.
-- [3] - Perform dotnet or nuget restore to generate project.assets.json. Without this file, cdxgen would not include indirect dependencies.
-- [4] - See the section on plugins
-- [5] - Powered by osquery. See the section on plugins
-
-<img src="./docs/cdxgen-tree.jpg" alt="cdxgen tree" width="256">
-
-### Automatic usage detection
-
-For node.js projects, lock files are parsed initially, so the SBOM would include all dependencies, including dev ones. An AST parser powered by babel-parser is then used to detect packages that are imported and used by non-test code. Such imported packages would automatically set their scope property to `required` in the resulting SBOM. You can turn off this analysis by passing the argument `--no-babel`. Scope property would then be set based on the `dev` attribute in the lock file.
-
-This attribute can be later used for various purposes. For example, [dep-scan](https://github.com/cyclonedx/dep-scan) uses this attribute to prioritize vulnerabilities. Unfortunately, tools such as dependency track, do not include this feature and might over-report the CVEs.
-
-By passing the argument `--required-only`, you can limit the SBOM only to include packages with the scope "required", commonly called production or non-dev dependencies. Combine with `--no-babel` to limit this list to only non-dev dependencies based on the `dev` attribute being false in the lock files.
-
-For go, `go mod why` command is used to identify required packages. For php, composer lock file is parsed to distinguish required (packages) from optional (packages-dev).
+- [Getting Started][docs-homepage]
+- [CLI Usage][docs-cli]
+- [Server Usage][docs-server]
+- [Supported Project Types][docs-project-types]
+- [Environment Variables][docs-env-vars]
+- [Advanced Usage][docs-advanced-usage]
+- [Permissions][docs-permissions]
+- [Support (Enterprise & Community)][docs-support]
 
 ## Usage
 
@@ -84,119 +56,129 @@ For go, `go mod why` command is used to identify required packages. For php, com
 
 ```shell
 npm install -g @cyclonedx/cdxgen
-
-# For CycloneDX 1.4 compatibility use version 8.6.0 or pass the argument `--spec-version 1.4`
-npm install -g @cyclonedx/cdxgen@8.6.0
 ```
 
-If you are a [Homebrew](https://brew.sh/) user, you can also install [cdxgen](https://formulae.brew.sh/formula/cdxgen) via:
+To run cdxgen without installing (hotloading), use the [pnpm dlx](https://pnpm.io/cli/dlx) command.
+
+```shell
+corepack pnpm dlx @cyclonedx/cdxgen --help
+```
+
+If you are a [Homebrew][homebrew-homepage] user, you can also install [cdxgen][homebrew-cdxgen] via:
 
 ```shell
 $ brew install cdxgen
 ```
 
-Deno install is also supported.
+If you are a [Winget][winget-homepage] user on windows, you can also install cdxgen via:
 
 ```shell
-deno install --allow-read --allow-env --allow-run --allow-sys=uid,systemMemoryInfo,gid --allow-write --allow-net -n cdxgen "npm:@cyclonedx/cdxgen/cdxgen"
+$ winget install cdxgen
 ```
 
-You can also use the cdxgen container image
+Deno and bun runtime can be used with limited support.
+
+```shell
+deno install --allow-read --allow-env --allow-run --allow-sys=uid,systemMemoryInfo,gid,homedir --allow-write --allow-net -n cdxgen "npm:@cyclonedx/cdxgen/cdxgen"
+```
+
+You can also use the cdxgen container image with node, deno, or bun runtime versions.
+
+The default version uses Node.js 23
 
 ```bash
-docker run --rm -v /tmp:/tmp -v $(pwd):/app:rw -t ghcr.io/cyclonedx/cdxgen -r /app -o /app/bom.json
-
-docker run --rm -v /tmp:/tmp -v $(pwd):/app:rw -t ghcr.io/cyclonedx/cdxgen:v8.6.0 -r /app -o /app/bom.json
+docker run --rm -e CDXGEN_DEBUG_MODE=debug -v /tmp:/tmp -v $(pwd):/app:rw -t ghcr.io/cyclonedx/cdxgen:master -r /app -o /app/bom.json
 ```
 
 To use the deno version, use `ghcr.io/cyclonedx/cdxgen-deno` as the image name.
 
 ```bash
-docker run --rm -v /tmp:/tmp -v $(pwd):/app:rw -t ghcr.io/cyclonedx/cdxgen-deno -r /app -o /app/bom.json
+docker run --rm -e CDXGEN_DEBUG_MODE=debug -v /tmp:/tmp -v $(pwd):/app:rw -t ghcr.io/cyclonedx/cdxgen-deno:master -r /app -o /app/bom.json
 ```
 
-In deno applications, cdxgen could be directly imported without any conversion. Please see the section on [integration as library](#integration-as-library)
+For the bun version, use `ghcr.io/cyclonedx/cdxgen-bun` as the image name.
+
+```bash
+docker run --rm -e CDXGEN_DEBUG_MODE=debug -v /tmp:/tmp -v $(pwd):/app:rw -t ghcr.io/cyclonedx/cdxgen-bun:master -r /app -o /app/bom.json
+```
+
+In deno applications, cdxgen could be directly imported without any conversion. Please see the section on [integration as a library](#integration-as-library)
 
 ```ts
-import { createBom, submitBom } from "npm:@cyclonedx/cdxgen@^9.0.1";
+import { createBom, submitBom } from "npm:@cyclonedx/cdxgen@^11.0.0";
 ```
 
 ## Getting Help
 
 ```text
-$ cdxgen -h
+cdxgen [command]
+
+Commands:
+  cdxgen completion  Generate bash/zsh completion
+
 Options:
-  -o, --output                 Output file. Default bom.json
-                                                           [default: "bom.json"]
-  -t, --type                   Project type
-  -r, --recurse                Recurse mode suitable for mono-repos. Defaults to
-                                true. Pass --no-recurse to disable.
-                                                       [boolean] [default: true]
-  -p, --print                  Print the SBOM as a table with tree.    [boolean]
-  -c, --resolve-class          Resolve class names for packages. jars only for n
-                               ow.                                     [boolean]
-      --deep                   Perform deep searches for components. Useful whil
-                               e scanning C/C++ apps, live OS and oci images.
-                                                                       [boolean]
-      --server-url             Dependency track url. Eg: https://deptrack.cyclon
-                               edx.io
+  -o, --output                 Output file. Default bom.json                                       [default: "bom.json"]
+  -t, --type                   Project type. Please refer to https://cyclonedx.github.io/cdxgen/#/PROJECT_TYPES for supp
+                               orted languages/platforms.                                                        [array]
+      --exclude-type           Project types to exclude. Please refer to https://cyclonedx.github.io/cdxgen/#/PROJECT_TY
+                               PES for supported languages/platforms.
+  -r, --recurse                Recurse mode suitable for mono-repos. Defaults to true. Pass --no-recurse to disable.
+                                                                                               [boolean] [default: true]
+  -p, --print                  Print the SBOM as a table with tree.                                            [boolean]
+  -c, --resolve-class          Resolve class names for packages. jars only for now.                            [boolean]
+      --deep                   Perform deep searches for components. Useful while scanning C/C++ apps, live OS and oci i
+                               mages.                                                                          [boolean]
+      --server-url             Dependency track url. Eg: https://deptrack.cyclonedx.io
+      --skip-dt-tls-check      Skip TLS certificate check when calling Dependency-Track.      [boolean] [default: false]
       --api-key                Dependency track api key
       --project-group          Dependency track project group
-      --project-name           Dependency track project name. Default use the di
-                               rectory name
-      --project-version        Dependency track project version
-                                                          [string] [default: ""]
-      --project-id             Dependency track project id. Either provide the i
-                               d or the project name and version together
-                                                                        [string]
-      --parent-project-id      Dependency track parent project id       [string]
-      --required-only          Include only the packages with required scope on
-                               the SBOM. Would set compositions.aggregate to inc
-                               omplete unless --no-auto-compositions is passed.
-                                                                       [boolean]
-      --fail-on-error          Fail if any dependency extractor fails. [boolean]
-      --no-babel               Do not use babel to perform usage analysis for Ja
-                               vaScript/TypeScript projects.           [boolean]
-      --generate-key-and-sign  Generate an RSA public/private key pair and then
-                               sign the generated SBOM using JSON Web Signatures
-                               .                                       [boolean]
-      --server                 Run cdxgen as a server                  [boolean]
-      --server-host            Listen address             [default: "127.0.0.1"]
-      --server-port            Listen port                     [default: "9090"]
-      --install-deps           Install dependencies automatically for some proje
-                               cts. Defaults to true but disabled for containers
-                                and oci scans. Use --no-install-deps to disable
-                               this feature.           [boolean] [default: true]
-      --validate               Validate the generated SBOM using json schema. De
-                               faults to true. Pass --no-validate to disable.
-                                                       [boolean] [default: true]
-      --evidence               Generate SBOM with evidence for supported languag
-                               es.                    [boolean] [default: false]
-      --spec-version           CycloneDX Specification version to use. Defaults
-                               to 1.5                    [number] [default: 1.5]
-      --filter                 Filter components containing this word in purl or
-                                component.properties.value. Multiple values allo
-                               wed.                                      [array]
-      --only                   Include components only containing this word in p
-                               url. Useful to generate BOM with first party comp
-                               onents alone. Multiple values allowed.    [array]
-      --author                 The person(s) who created the BOM. Set this value
-                                if you're intending the modify the BOM and claim
-                                authorship.[array] [default: "OWASP Foundation"]
-      --profile                BOM profile to use for generation. Default generi
-                               c.
-  [choices: "appsec", "research", "operational", "threat-modeling", "license-com
-                                       pliance", "generic"] [default: "generic"]
-      --exclude                Additional glob pattern(s) to ignore      [array]
-      --include-formulation    Generate formulation section using git metadata.
-                                                      [boolean] [default: false]
-      --include-crypto         Include crypto libraries found under formulation.
-                                                      [boolean] [default: false]
-      --auto-compositions      Automatically set compositions when the BOM was f
-                               iltered. Defaults to true
-                                                       [boolean] [default: true]
-  -h, --help                   Show help                               [boolean]
-  -v, --version                Show version number                     [boolean]
+      --project-name           Dependency track project name. Default use the directory name
+      --project-version        Dependency track project version                                   [string] [default: ""]
+      --project-id             Dependency track project id. Either provide the id or the project name and version togeth
+                               er                                                                               [string]
+      --parent-project-id      Dependency track parent project id                                               [string]
+      --required-only          Include only the packages with required scope on the SBOM. Would set compositions.aggrega
+                               te to incomplete unless --no-auto-compositions is passed.                       [boolean]
+      --fail-on-error          Fail if any dependency extractor fails.                                         [boolean]
+      --no-babel               Do not use babel to perform usage analysis for JavaScript/TypeScript projects.  [boolean]
+      --generate-key-and-sign  Generate an RSA public/private key pair and then sign the generated SBOM using JSON Web S
+                               ignatures.                                                                      [boolean]
+      --server                 Run cdxgen as a server                                                          [boolean]
+      --server-host            Listen address                                                     [default: "127.0.0.1"]
+      --server-port            Listen port                                                             [default: "9090"]
+      --install-deps           Install dependencies automatically for some projects. Defaults to true but disabled for c
+                               ontainers and oci scans. Use --no-install-deps to disable this feature.         [boolean]
+      --validate               Validate the generated SBOM using json schema. Defaults to true. Pass --no-validate to di
+                               sable.                                                          [boolean] [default: true]
+      --evidence               Generate SBOM with evidence for supported languages.           [boolean] [default: false]
+      --spec-version           CycloneDX Specification version to use. Defaults to 1.6           [number] [default: 1.6]
+      --filter                 Filter components containing this word in purl or component.properties.value. Multiple va
+                               lues allowed.                                                                     [array]
+      --only                   Include components only containing this word in purl. Useful to generate BOM with first p
+                               arty components alone. Multiple values allowed.                                   [array]
+      --author                 The person(s) who created the BOM. Set this value if you're intending the modify the BOM
+                               and claim authorship.                               [array] [default: "OWASP Foundation"]
+      --profile                BOM profile to use for generation. Default generic.
+  [choices: "appsec", "research", "operational", "threat-modeling", "license-compliance", "generic", "machine-learning",
+                                                       "ml", "deep-learning", "ml-deep", "ml-tiny"] [default: "generic"]
+      --exclude                Additional glob pattern(s) to ignore                                              [array]
+      --include-formulation    Generate formulation section with git metadata and build tools. Defaults to false.
+                                                                                              [boolean] [default: false]
+      --include-crypto         Include crypto libraries as components.                        [boolean] [default: false]
+      --standard               The list of standards which may consist of regulations, industry or organizational-specif
+                               ic standards, maturity models, best practices, or any other requirements which can be eva
+                               luated against or attested to.
+  [array] [choices: "asvs-5.0", "asvs-4.0.3", "bsimm-v13", "masvs-2.0.0", "nist_ssdf-1.1", "pcissc-secure-slc-1.1", "scv
+                                                                                         s-1.0.0", "ssaf-DRAFT-2023-11"]
+      --min-confidence         Minimum confidence needed for the identity of a component from 0 - 1, where 1 is 100% con
+                               fidence.                                                            [number] [default: 0]
+      --technique              Analysis technique to use
+  [array] [choices: "auto", "source-code-analysis", "binary-analysis", "manifest-analysis", "hash-comparison", "instrume
+                                                                                                   ntation", "filename"]
+      --auto-compositions      Automatically set compositions when the BOM was filtered. Defaults to true
+                                                                                               [boolean] [default: true]
+  -h, --help                   Show help                                                                       [boolean]
+  -v, --version                Show version number                                                             [boolean]
 ```
 
 All boolean arguments accept `--no` prefix to toggle the behavior.
@@ -227,9 +209,13 @@ To recursively generate a single BOM for all languages pass `-r` argument.
 cdxgen -r -o bom.json
 ```
 
-To generate SBOM for an older specification version, such as 1.4, pass the version number using the `--spec-version` argument.
+The default specification used by cdxgen is 1.5. To generate BOM for a different specification version, such as 1.6 or 1.4, pass the version number using the `--spec-version` argument.
 
 ```shell
+# 1.6 is unsupported by most tools
+cdxgen -r -o bom.json --spec-version 1.6
+
+# 1.4 is supported by most tools
 cdxgen -r -o bom.json --spec-version 1.4
 ```
 
@@ -264,19 +250,7 @@ Use curl or your favorite tool to pass arguments to the `/sbom` route.
 
 ### Server arguments
 
-Arguments can be passed either via the query string or as a JSON body. The following arguments are supported.
-
-| Argument       | Description                                                                                                                                 |
-| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| type           | Project type                                                                                                                                |
-| multiProject   | [boolean]                                                                                                                                   |
-| requiredOnly   | Include only the packages with required scope on the SBOM. [boolean]                                                                        |
-| noBabel        | Do not use babel to perform usage analysis for JavaScript/TypeScript projects. [boolean]                                                    |
-| installDeps    | Install dependencies automatically for some projects. Defaults to true but disabled for containers and oci scans. [boolean] [default: true] |
-| project        |                                                                                                                                             |
-| projectName    | Dependency track project name. Default use the directory name                                                                               |
-| projectGroup   | Dependency track project group                                                                                                              |
-| projectVersion | Dependency track project version [default: ""]                                                                                              |
+Arguments can be passed either via the query string or as a JSON body. Please refer to [Server Usage][docs-server]
 
 ### Health endpoint
 
@@ -339,7 +313,7 @@ This would create a bom.json.map file with the jar - class name mapping. Refer t
 
 ## Resolving licenses
 
-cdxgen can automatically query public registries such as maven, npm, or nuget to resolve the package licenses. This is a time-consuming operation and is disabled by default. To enable, set the environment variable `FETCH_LICENSE` to `true`, as shown. Ensure that `GITHUB_TOKEN` is set or provided by [built-in GITHUB_TOKEN in GitHub Actions](https://docs.github.com/en/rest/overview/rate-limits-for-the-rest-api#primary-rate-limit-for-github_token-in-github-actions), otherwise rate limiting might prevent license resolving.
+cdxgen can automatically query public registries such as maven, npm, or nuget to resolve the package licenses. This is a time-consuming operation and is disabled by default. To enable, set the environment variable `FETCH_LICENSE` to `true`, as shown. Ensure that `GITHUB_TOKEN` is set or provided by [built-in GITHUB_TOKEN in GitHub Actions][github-rate-limit], otherwise rate limiting might prevent license resolving.
 
 ```bash
 export FETCH_LICENSE=true
@@ -356,51 +330,11 @@ cdxgen can retain the dependency tree under the `dependencies` attribute for a s
 - Gradle
 - Scala SBT
 - Python (requirements.txt, setup.py, pyproject.toml, poetry.lock)
-- .NET (packages.lock.json, project.assets.json, paket.lock)
+- .NET (packages.lock.json, project.assets.json, paket.lock, .nuspec/.nupkg)
 - Go (go.mod)
 - PHP (composer.lock)
 - Ruby (Gemfile.lock)
-
-## Environment variables
-
-| Variable                     | Description                                                                                                                          |
-| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| CDXGEN_DEBUG_MODE            | Set to `debug` to enable debug messages                                                                                              |
-| GITHUB_TOKEN                 | Specify GitHub token to prevent traffic shaping while querying license and repo information                                          |
-| MVN_CMD                      | Set to override maven command                                                                                                        |
-| MVN_ARGS                     | Set to pass additional arguments such as profile or settings to maven                                                                |
-| MAVEN_HOME                   | Specify maven home                                                                                                                   |
-| MAVEN_CENTRAL_URL            | Specify URL of Maven Central for metadata fetching (e.g. when private repo is used)                                                  |
-| ANDROID_MAVEN_URL            | Specify URL of Android Maven Repository for metadata fetching (e.g. when private repo is used)                                       |
-| BAZEL_TARGET                 | Bazel target to build. Default :all (Eg: //java-maven)                                                                               |
-| BAZEL_STRIP_MAVEN_PREFIX     | Strip Maven group prefix (e.g. useful when private repo is used, defaults to `/maven2/`)                                             |
-| BAZEL_USE_ACTION_GRAPH       | SBOM for specific Bazel target, uses `bazel aquery 'outputs(".*.jar", deps(<BAZEL_TARGET>))'` (defaults to `false`)                  |
-| GRADLE_CACHE_DIR             | Specify gradle cache directory. Useful for class name resolving                                                                      |
-| GRADLE_MULTI_PROJECT_MODE    | Unused. Automatically handled                                                                                                        |
-| GRADLE_ARGS                  | Set to pass additional arguments such as profile or settings to gradle (all tasks). Eg: --configuration runtimeClassPath             |
-| GRADLE_ARGS_PROPERTIES       | Set to pass additional arguments only to the `gradle properties` task, used for collecting metadata about the project                |
-| GRADLE_ARGS_DEPENDENCIES     | Set to pass additional arguments only to the `gradle dependencies` task, used for listing actual project dependencies                |
-| GRADLE_HOME                  | Specify gradle home                                                                                                                  |
-| GRADLE_CMD                   | Set to override gradle command                                                                                                       |
-| GRADLE_DEPENDENCY_TASK       | By default cdxgen use the task "dependencies" to collect packages. Set to override the task name.                                    |
-| SBT_CACHE_DIR                | Specify sbt cache directory. Useful for class name resolving                                                                         |
-| FETCH_LICENSE                | Set this variable to `true` or `1` to fetch license information from the registry. npm and golang                                    |
-| SEARCH_MAVEN_ORG             | If maven metadata is missing in jar file, a search is performed on search.maven.org. Set to `false` or `0` to disable search.        |
-| USE_GOSUM                    | Set to `true` or `1` to generate BOMs for golang projects using go.sum as the dependency source of truth, instead of go.mod          |
-| CDXGEN_TIMEOUT_MS            | Default timeout for known execution involving maven, gradle or sbt                                                                   |
-| CDXGEN_SERVER_TIMEOUT_MS     | Default timeout in server mode                                                                                                       |
-| CDXGEN_MAX_BUFFER            | Max buffer for stdout and stderr. Defaults to 100MB                                                                                  |
-| CLJ_CMD                      | Set to override the clojure cli command                                                                                              |
-| LEIN_CMD                     | Set to override the leiningen command                                                                                                |
-| SBOM_SIGN_ALGORITHM          | Signature algorithm. Some valid values are RS256, RS384, RS512, PS256, PS384, PS512, ES256 etc                                       |
-| SBOM_SIGN_PRIVATE_KEY        | Private key to use for signing                                                                                                       |
-| SBOM_SIGN_PUBLIC_KEY         | Optional. Public key to include in the SBOM signature                                                                                |
-| CDX_MAVEN_PLUGIN             | CycloneDX Maven plugin to use. Default "org.cyclonedx:cyclonedx-maven-plugin:2.7.11"                                                 |
-| CDX_MAVEN_GOAL               | CycloneDX Maven plugin goal to use. Default makeAggregateBom. Other options: makeBom, makePackageBom                                 |
-| CDX_MAVEN_INCLUDE_TEST_SCOPE | Whether test scoped dependencies should be included from Maven projects, Default: true                                               |
-| ASTGEN_IGNORE_DIRS           | Comma separated list of directories to ignore while analyzing using babel. The environment variable is also used by atom and astgen. |
-| ASTGEN_IGNORE_FILE_PATTERN   | Ignore regex to use                                                                                                                  |
-| PYPI_URL                     | Override pypi url. Default: https://pypi.org/pypi/                                                                                   |
+- Rust (Cargo.lock)
 
 ## Plugins
 
@@ -410,7 +344,7 @@ cdxgen could be extended with external binary plugins to support more SBOM use c
 sudo npm install -g @cyclonedx/cdxgen-plugins-bin
 ```
 
-### Docker / OCI container support
+## Docker / OCI container support
 
 `docker` type is automatically detected based on the presence of values such as `sha256` or `docker.io` prefix etc in the path.
 
@@ -435,7 +369,7 @@ cdxgen /tmp/slim.tar -o /tmp/bom.json -t docker
 
 ### Podman in rootless mode
 
-Setup podman in either [rootless](https://github.com/containers/podman/blob/master/docs/tutorials/rootless_tutorial.md) or [remote](https://github.com/containers/podman/blob/master/docs/tutorials/mac_win_client.md) mode
+Setup podman in either [rootless][podman-github-rootless] or [remote][podman-github-remote] mode
 
 Do not forget to start the podman socket required for API access on Linux.
 
@@ -445,7 +379,7 @@ systemctl --user start podman.socket
 podman system service -t 0 &
 ```
 
-### Generate OBOM for a live system
+## Generate OBOM for a live system
 
 You can use the `obom` command to generate an OBOM for a live system or a VM for compliance and vulnerability management purposes. Windows and Linux operating systems are supported in this mode.
 
@@ -455,7 +389,16 @@ obom
 # cdxgen -t os
 ```
 
-This feature is powered by osquery, which is [installed](https://github.com/cyclonedx/cdxgen-plugins-bin/blob/main/build.sh#L8) along with the binary plugins. cdxgen would opportunistically try to detect as many components, apps, and extensions as possible using the [default queries](queries.json). The process would take several minutes and result in an SBOM file with thousands of components of various types, such as operating-system, device-drivers, files, and data.
+This feature is powered by osquery, which is [installed](https://github.com/cyclonedx/cdxgen-plugins-bin/blob/main/build.sh#L8) along with the binary plugins. cdxgen would opportunistically try to detect as many components, apps, and extensions as possible using the [default queries](data/queries.json). The process would take several minutes and result in an SBOM file with thousands of components of various types, such as operating-system, device-drivers, files, and data.
+
+## Generate Cryptography Bill of Materials (CBOM)
+
+Use the `cbom` alias to generate a CBOM. This is currently supported only for Java projects.
+
+```shell
+cbom -t java
+# cdxgen -t java --include-crypto -o bom.json .
+```
 
 ## Generating SaaSBOM and component evidences
 
@@ -469,9 +412,9 @@ cdxgen can sign the generated BOM json file to increase authenticity and non-rep
 - SBOM_SIGN_PRIVATE_KEY: Location to the RSA private key
 - SBOM_SIGN_PUBLIC_KEY: Optional. Location to the RSA public key
 
-To generate test public/private key pairs, you can run cdxgen by passing the argument `--generate-key-and-sign`. The generated json file would have an attribute called `signature`, which could be used for validation. [jwt.io](https://jwt.io) is a known site that could be used for such signature validation.
+To generate test public/private key pairs, you can run cdxgen by passing the argument `--generate-key-and-sign`. The generated json file would have an attribute called `signature`, which could be used for validation. [jwt.io][jwt-homepage] is a known site that could be used for such signature validation.
 
-![SBOM signing](sbom-sign.jpg)
+![SBOM signing](./docs/_media/sbom-sign.jpg)
 
 ### Verifying the signature
 
@@ -484,7 +427,7 @@ cdx-verify -i bom.json --public-key public.key
 
 ### Custom verification tool (Node.js example)
 
-There are many [libraries](https://jwt.io/#libraries-io) available to validate JSON Web Tokens. Below is a javascript example.
+There are many [libraries][jwt-libraries] available to validate JSON Web Tokens. Below is a javascript example.
 
 ```js
 # npm install jws
@@ -505,20 +448,45 @@ if (validationResult) {
 }
 ```
 
+## Automatic usage detection
+
+For node.js projects, lock files are parsed initially, so the SBOM would include all dependencies, including dev ones. An AST parser powered by babel-parser is then used to detect packages that are imported and used by non-test code. Such imported packages would automatically set their scope property to `required` in the resulting SBOM. You can turn off this analysis by passing the argument `--no-babel`. Scope property would then be set based on the `dev` attribute in the lock file.
+
+This attribute can be later used for various purposes. For example, [dep-scan][depscan-github] uses this attribute to prioritize vulnerabilities. Unfortunately, tools such as dependency track, do not include this feature and might over-report the CVEs.
+
+With the argument `--required-only`, you can limit the SBOM only to include packages with the scope "required", commonly called production or non-dev dependencies. Combine with `--no-babel` to limit this list to only non-dev dependencies based on the `dev` attribute being false in the lock files.
+
+For go, `go mod why` command is used to identify required packages. For php, composer lock file is parsed to distinguish required (packages) from optional (packages-dev).
+
 ## Automatic services detection
 
 cdxgen can automatically detect names of services from YAML manifests such as docker-compose, Kubernetes, or Skaffold manifests. These would be populated under the `services` attribute in the generated SBOM. With [evinse](./ADVANCED.md), additional services could be detected by parsing common annotations from the source code.
 
 ## Conversion to SPDX format
 
-Use the [CycloneDX CLI](https://github.com/CycloneDX/cyclonedx-cli) tool for advanced use cases such as conversion, diff and merging.
+Use the [CycloneDX CLI][cyclonedx-cli-github] tool for advanced use cases such as conversion, diff and merging.
+
+## Including .NET Global Assembly Cache dependencies in the results
+
+For `dotnet` and `dotnet-framework`, SBOM could include components without a version number. Often, these components begin with the prefix `System.`.
+
+Global Assembly Cache (GAC) dependencies (System Runtime dependencies) must be made available in the build output of the project for version detection. A simple way to have the dotnet build copy the GAC dependencies into the build directory is to place the file `Directory.Build.props` into the root of the project and ensure the contents include the following:
+
+```
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<ItemDefinitionGroup>
+  <Reference>
+    <Private>True</Private>
+  </Reference>
+</ItemDefinitionGroup>
+</Project>
+```
+
+Then, run cdxgen cli with the `--deep` argument.
 
 ## License
 
-Permission to modify and redistribute is granted under the terms of the Apache 2.0 license. See the [LICENSE](LICENSE) file for the full license.
-
-[license]: https://github.com/cyclonedx/cdxgen/blob/master/LICENSE
-[cyclonedx-homepage]: https://cyclonedx.org
+Permission to modify and redistribute is granted under the terms of the Apache 2.0 license. See the [LICENSE][github-license] file for the full license.
 
 ## Integration as library
 
@@ -540,27 +508,73 @@ const bomNSData = await createBom(filePath, options);
 const dbody = await submitBom(args, bomNSData.bomJson);
 ```
 
-## Node.js >= 20 permission model
-
-Refer to the [permissions document](./docs/PERMISSIONS.md)
-
 ## Contributing
 
-Follow the usual PR process, but before raising a PR, run the following commands.
+Please check out our [contribute to CycloneDX/cdxgen documentation][github-contribute] if you are interested in helping.
+
+Before raising a PR, please run the following commands.
 
 ```bash
+corepack enable pnpm
+pnpm install --config.strict-dep-builds=true
 # Generate types using jsdoc syntax
-npm run gen-types
-# Run eslint with auto fix
-npm run lint
-# Run prettier
-npm run pretty
+pnpm run gen-types
+# Run biomejs formatter and linter with auto fix
+pnpm run lint
 # Run jest tests
-npm test
+pnpm test
 ```
 
-If you are completely new to contributing to open-source projects, then look for [issues](https://github.com/CycloneDX/cdxgen/issues) with the labels "good first issue" or "help wanted".
+## Sponsors
 
-## Enterprise support
+<img src="./docs/_media/LevoLogo-LightBg.jpg" width="200" height="auto">
 
-Enterprise support, including custom development and integration services, is available via [AppThreat Ltd](https://www.appthreat.com). Free community support is also available via [Discord](https://discord.gg/tmmtjCEHNV).
+<!-- LINK LABELS -->
+<!-- Badges -->
+
+[badge-github-contributors]: https://img.shields.io/github/contributors/cyclonedx/cdxgen
+[badge-github-license]: https://img.shields.io/github/license/cyclonedx/cdxgen
+[badge-github-releases]: https://img.shields.io/github/v/release/cyclonedx/cdxgen
+[badge-jsr]: https://img.shields.io/jsr/v/%40cyclonedx/cdxgen
+[badge-npm]: https://img.shields.io/npm/v/%40cyclonedx%2Fcdxgen
+[badge-npm-downloads]: https://img.shields.io/npm/dy/%40cyclonedx%2Fcdxgen
+[badge-swh]: https://archive.softwareheritage.org/badge/origin/https://github.com/CycloneDX/cdxgen/
+
+<!-- cdxgen github project -->
+
+[github-contribute]: https://github.com/CycloneDX/cdxgen/contribute
+[github-contributors]: https://github.com/CycloneDX/cdxgen/graphs/contributors
+[github-issues]: https://github.com/CycloneDX/cdxgen/issues
+[github-license]: https://github.com/cyclonedx/cdxgen/blob/master/LICENSE
+[github-releases]: https://github.com/CycloneDX/cdxgen/releases
+
+<!-- cdxgen documentation site -->
+
+[docs-homepage]: https://cyclonedx.github.io/cdxgen
+[docs-advanced-usage]: https://cyclonedx.github.io/cdxgen/#/ADVANCED
+[docs-cli]: https://cyclonedx.github.io/cdxgen/#/CLI
+[docs-env-vars]: https://cyclonedx.github.io/cdxgen/#/ENV
+[docs-permissions]: https://cyclonedx.github.io/cdxgen/#/PERMISSIONS
+[docs-project-types]: https://cyclonedx.github.io/cdxgen/#/PROJECT_TYPES
+[docs-server]: https://cyclonedx.github.io/cdxgen/#/SERVER
+[docs-support]: https://cyclonedx.github.io/cdxgen/#/PROJECT_TYPES
+
+<!-- web links-->
+
+[appthreat-homepage]: https://www.appthreat.com
+[cyclonedx-homepage]: https://cyclonedx.org
+[cyclonedx-cli-github]: https://github.com/CycloneDX/cyclonedx-cli
+[depscan-github]: https://github.com/cyclonedx/dep-scan
+[github-rate-limit]: https://docs.github.com/en/rest/overview/rate-limits-for-the-rest-api#primary-rate-limit-for-github_token-in-github-actions
+[homebrew-homepage]: https://brew.sh
+[homebrew-cdxgen]: https://formulae.brew.sh/formula/cdxgen
+[winget-homepage]: https://learn.microsoft.com/en-us/windows/package-manager/winget/
+[jsr-cdxgen]: https://jsr.io/@cyclonedx/cdxgen
+[jwt-homepage]: https://jwt.io
+[jwt-libraries]: https://jwt.io/libraries
+[librariesio]: https://libraries.io/npm/@cyclonedx%2Fcdxgen
+[npmjs-cdxgen]: https://www.npmjs.com/package/@cyclonedx/cdxgen
+[podman-github-rootless]: https://github.com/containers/podman/blob/master/docs/tutorials/rootless_tutorial.md
+[podman-github-remote]: https://github.com/containers/podman/blob/master/docs/tutorials/mac_win_client.md
+[swh-cdxgen]: https://archive.softwareheritage.org/browse/origin/?origin_url=https://github.com/CycloneDX/cdxgen
+[cdxgen-gpt]: https://chatgpt.com/g/g-673bfeb4037481919be8a2cd1bf868d2-cyclonedx-generator-cdxgen
