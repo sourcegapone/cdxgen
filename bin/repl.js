@@ -23,6 +23,7 @@ import {
 import { readBinary } from "../lib/helpers/protobom.js";
 import { getTmpDir } from "../lib/helpers/utils.js";
 import { validateBom } from "../lib/helpers/validator.js";
+import { getBomWithOras } from "../lib/managers/oci.js";
 
 const options = {
   useColors: true,
@@ -86,6 +87,22 @@ export const importSbom = (sbomOrPath) => {
   ) {
     sbom = readBinary(sbomOrPath, true);
     printSummary(sbom);
+  } else if (
+    sbomOrPath.startsWith("ghcr.io") ||
+    sbomOrPath.startsWith("docker.io")
+  ) {
+    try {
+      sbom = getBomWithOras(sbomOrPath);
+      if (sbom) {
+        printSummary(sbom);
+      } else {
+        console.log(
+          `cyclonedx sbom attachment was not found within ${sbomOrPath}`,
+        );
+      }
+    } catch (e) {
+      console.log(`⚠ Unable to import the BOM from ${sbomOrPath} due to ${e}`);
+    }
   } else {
     console.log(`⚠ ${sbomOrPath} is invalid.`);
   }

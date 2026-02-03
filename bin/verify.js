@@ -8,7 +8,11 @@ import jws from "jws";
 import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
 
-import { dirNameStr, retrieveCdxgenVersion } from "../lib/helpers/utils.js";
+import {
+  dirNameStr,
+  retrieveCdxgenVersion,
+  safeExistsSync,
+} from "../lib/helpers/utils.js";
 import { getBomWithOras } from "../lib/managers/oci.js";
 
 const dirName = dirNameStr;
@@ -74,10 +78,13 @@ function getBom(args) {
   }
   return undefined;
 }
-
 const bomJson = getBom(args);
 if (!bomJson) {
   console.log(`${args.input} is invalid!`);
+  process.exit(1);
+}
+if (bomJson && !safeExistsSync(args.publicKey)) {
+  console.log("Public key for signature verification is missing!");
   process.exit(1);
 }
 let hasInvalidComp = false;
