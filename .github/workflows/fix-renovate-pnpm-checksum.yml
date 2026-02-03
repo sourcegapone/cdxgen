@@ -2,8 +2,6 @@ name: Fix pnpm-lock after renovate
 
 on:
   pull_request:
-    branches:
-      - 'renovate/*'
     paths:
       - 'pnpm-lock.yaml'
 
