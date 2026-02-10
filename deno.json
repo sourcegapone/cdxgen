@@ -1,6 +1,6 @@
 {
   "name": "@cyclonedx/cdxgen",
-  "version": "12.1.0-beta.1",
+  "version": "12.1.0-beta.2",
   "exports": "./lib/cli/index.js",
   "compilerOptions": {
     "lib": ["deno.window"],
@@ -114,5 +114,6 @@
     "connect": "npm:connect@^3.7.0",
     "jsonata": "npm:jsonata@^2.1.0",
     "@iarna/toml": "npm:@iarna/toml@2.2.5"
-  }
+  },
+  "allowScripts": ["npm:@appthreat/sqlite3@7.0.3"]
 }
