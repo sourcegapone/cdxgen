@@ -213,7 +213,6 @@ jobs:
             -v ${{ github.workspace }}:${{ github.workspace }}
             -w ${{ github.workspace }}
           run: |
-            # Setup builder
             ${{ matrix.prepare }}
 
             # Install nvm
