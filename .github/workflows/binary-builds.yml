@@ -206,7 +206,6 @@ jobs:
         if: ${{ matrix.os == 'linux' }}
         with:
           image: ${{ matrix.image }}
-          shell: bash
           options: |
             -e NVM_NODEJS_ORG_MIRROR=${{ matrix.node-download-url }}
             -e FETCH_LICENSE=true
@@ -215,27 +214,15 @@ jobs:
             -w ${{ github.workspace }}
           run: |
             ${{ matrix.prepare }}
-
-            # Install nvm
             NVM_VERSION=`awk 'BEGIN {ORS=""}; FNR==2 {print $1}' .versions/nvm`
             curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/$NVM_VERSION/install.sh | bash
             export NVM_DIR="$HOME/.nvm"
             sed -i 's/x64-musl/"${NVM_ARCH}-musl"/g' "$NVM_DIR/nvm.sh"
             [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-
-            # Install node
             nvm install
-
-            # Install pnpm
             npm install --global pnpm
-
-            # Install composer
             curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
-
-            # Build
             ${{ matrix.cmd }}
-
-            # Change the owner to the local user
             chown -R ${{ steps.user_info.outputs.user }} * .*
       - name: Build for darwin & windows
         if: ${{ matrix.libc == 'gnu' && matrix.os != 'linux' }}
