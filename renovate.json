@@ -30,7 +30,8 @@
       "extends": [":separatePatchReleases"],
       "automerge": true,
       "automergeType": "pr",
-      "rebaseWhen": "conflicted"
+      "rebaseWhen": "conflicted",
+      "minimumReleaseAgeBehaviour": "timestamp-optional"
     },
     {
       "description": "cdxgen images: exclude major version updates for images pinned to a specific major version by filename convention",
