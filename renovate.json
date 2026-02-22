@@ -31,6 +31,7 @@
       "automerge": true,
       "automergeType": "pr",
       "rebaseWhen": "conflicted",
+      "minimumReleaseAge": "1 day",
       "minimumReleaseAgeBehaviour": "timestamp-optional"
     },
     {
