@@ -137,11 +137,6 @@
       "matchManagers": ["docker"],
       "matchPackageNames": ["@dependencytrack/**"],
       "groupName": "dependencytrack"
-    },
-    {
-      "matchManagers": ["docker", "github-releases", "golang-version"],
-      "matchPackageNames": ["go*"],
-      "groupName": "golang"
     }
   ],
   "customManagers": [
