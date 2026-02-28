@@ -1,12 +1,11 @@
 # Getting Started <!-- {docsify-ignore-all} -->
 
-cdxgen is available as an npm package, container image, and single application executables. Begin your journey by selecting your use case.
+cdxgen is available as an npm package, container image, and single executable binaries. Begin your journey by selecting your use case.
 
 <!-- tabs:start -->
 
-#### **Generate SBOM for git repos**
-
 ## For Contributors / Developers
+
 ```shell
 pnpm install
 pnpm dlx cdxgen
@@ -15,7 +14,7 @@ pnpm dlx cdxgen
 ## Installation
 
 ```shell
-sudo npm install -g @cyclonedx/cdxgen
+npm install -g @cyclonedx/cdxgen
 ```
 
 If you are a [Homebrew](https://brew.sh/) user, you can also install [cdxgen](https://formulae.brew.sh/formula/cdxgen) via:
@@ -24,12 +23,62 @@ If you are a [Homebrew](https://brew.sh/) user, you can also install [cdxgen](ht
 brew install cdxgen
 ```
 
-For Windows and Linux, Single Application Executable (sae) builds are available from GitHub [Releases](https://github.com/cdxgen/cdxgen/releases) in two flavours:
+## Single Executable Application (SEA) Binaries
 
-- cdxgen.exe - Node 22 runtime + CLI with the optional binary plugins (atom, dosai, etc)
-- cdxgen-slim.exe - Node 22 runtime + CLI
+`cdxgen` is available as a standalone binary for Linux, macOS, and Windows. These binaries do not require Node.js or `npm` to be installed on the system, making them ideal for CI/CD environments, containerized scans, or quick local usage.
 
-## Usage
+Binaries are available in the [GitHub Releases][https://github.com/cdxgen/cdxgen/releases] page.
+
+**Available Variants:**
+
+- **Standard:** (`cdxgen-linux-amd64`, etc.) The default standalone binary with bundled plugins and node runtime.
+- **Slim:** (`-slim`) Smaller binaries with the node runtime and without the binary plugins. Some project types that require plugins such as `docker`, `os`, and features such as `evinse` will not work.
+- **Musl:** (`-musl`) Linked against Musl libc, specifically for **Alpine Linux**.
+
+### Linux and macOS (Bash)
+
+```bash
+OS=linux
+ARCH=amd64
+BINARY_NAME=cdxgen-$OS-$ARCH
+
+curl -LO "https://github.com/cdxgen/cdxgen/releases/latest/download/$BINARY_NAME"
+curl -LO "https://github.com/cdxgen/cdxgen/releases/latest/download/$BINARY_NAME.sha256"
+
+if command -v sha256sum >/dev/null; then
+  sha256sum -c "$BINARY_NAME.sha256"
+else
+  shasum -a 256 -c "$BINARY_NAME.sha256"
+fi
+
+chmod +x "$BINARY_NAME"
+./"$BINARY_NAME" --version
+```
+
+### Windows (PowerShell)
+
+```powershell
+$Arch = "amd64"
+$BinaryName = "cdxgen-windows-$Arch.exe"
+$BaseUrl = "https://github.com/cdxgen/cdxgen/releases/latest/download"
+
+Invoke-WebRequest -Uri "$BaseUrl/$BinaryName" -OutFile $BinaryName
+Invoke-WebRequest -Uri "$BaseUrl/$BinaryName.sha256" -OutFile "$BinaryName.sha256"
+
+$ExpectedHash = (Get-Content "$BinaryName.sha256").Split(" ")[0].Trim()
+$ActualHash = (Get-FileHash $BinaryName -Algorithm SHA256).Hash.ToLower()
+
+if ($ExpectedHash -eq $ActualHash) {
+    Write-Host "Hash verified successfully!" -ForegroundColor Green
+    & .\$BinaryName --version
+} else {
+    Write-Error "Hash mismatch! Do not run the binary."
+}
+```
+
+> **Note:** The `cdx-verify` tool is also available as a standalone binary in the releases using the same naming convention (e.g., `cdx-verify-linux-amd64`).
+
+## Generate BOM for git repos
 
 Minimal example.
 
@@ -69,22 +118,7 @@ To generate SBOM for C or Python, ensure Java >= 21 is installed.
 cdxgen -t c -o bom.json
 ```
 
-#### **Generate SBOM for container images**
-
-## For Contributors / Developers
-```shell
-pnpm install
-pnpm dlx cdxgen
-```
-
-
-## Installation
-
-```shell
-sudo npm install -g @cyclonedx/cdxgen
-```
-
-## Usage
+## Generate BOM for container images
 
 `docker` type is automatically detected based on the presence of values such as `sha256` or `docker.io` prefix etc in the path.
 

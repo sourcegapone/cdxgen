@@ -540,7 +540,19 @@ const dbody = await submitBom(args, bomNSData.bomJson);
 
 ## Contributing
 
-Please check out our [contribute to CycloneDX/cdxgen documentation][github-contribute] if you are interested in helping.
+Please check out our [open issues][github-contribute] if you are interested in helping.
+
+### Codeberg Mirror
+
+The project is mirrored on [Codeberg](https://codeberg.org/cdxgen/cdxgen). Users can clone the repository using the following URL:
+
+```shell
+git clone https://codeberg.org/cdxgen/cdxgen.git
+```
+
+The maintainers accept Pull Requests (PRs) against the Codeberg repository.
+
+> **Note:** The Codeberg repository is currently synced manually from GitHub.
 
 Before raising a PR, please run the following commands.
 
