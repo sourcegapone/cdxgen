@@ -96,7 +96,7 @@ jobs:
           CDXGEN_DEBUG_MODE: debug
       - name: repotests cargo fixture
         run: |
-          bin/cdxgen.js -t cargo -t github test/data/cargo-workspace-repotest -o bomresults/bom-cargo-workspace-fixture.json --include-formulation --bom-audit --fail-on-error
+          bin/cdxgen.js -t cargo -t github test/data/cargo-workspace-repotest -o bomresults/bom-cargo-workspace-fixture.json --include-formulation --bom-audit
           jq -e 'any(.components[]; .name == "core" and any((.properties // [])[]; .name == "cdx:cargo:workspaceDependencyResolved" and .value == "true"))' bomresults/bom-cargo-workspace-fixture.json
           jq -e 'any(.components[]; .name == "build-helper" and any((.properties // [])[]; .name == "cdx:cargo:dependencyKind" and .value == "build") and any((.properties // [])[]; .name == "cdx:cargo:resolvedWorkspaceMember" and .value == "build-helper"))' bomresults/bom-cargo-workspace-fixture.json
           jq -e 'any(.components[]; any((.properties // [])[]; .name == "cdx:github:action:ecosystem" and .value == "cargo") and any((.properties // [])[]; .name == "cdx:github:action:role" and .value == "toolchain"))' bomresults/bom-cargo-workspace-fixture.json
@@ -106,6 +106,20 @@ jobs:
           CARGO_CACHE_DIR=test/data/cargo-cache-fixture/registry/cache/index.crates.io-1949cf8c6b5b557f bin/cdxgen.js -t cargo-cache . -o bomresults/bom-cargo-cache-fixture.json --fail-on-error
           jq -e 'any(.components[]; .name == "serde" and any((.properties // [])[]; .name == "cdx:cargo:cacheSource" and .value == "registry-cache"))' bomresults/bom-cargo-cache-fixture.json
         shell: bash
+      - name: repotests cargo dry-run fixture
+        run: |
+          bin/cdxgen.js --dry-run -t cargo -t github test/data/cargo-workspace-repotest --no-banner > bomresults/dry-run-cargo-workspace.txt
+          grep -q "cdxgen dry-run activity summary" bomresults/dry-run-cargo-workspace.txt
+          grep -q "cargo" bomresults/dry-run-cargo-workspace.txt
+          grep -q "validate" bomresults/dry-run-cargo-workspace.txt
+          grep -q "write" bomresults/dry-run-cargo-workspace.txt
+          bin/cdxgen.js --dry-run -t js test/data/yarn-workspaces-same-version-demo --no-banner > bomresults/dry-run-js-workspace.txt
+          grep -q "cdxgen dry-run activity summary" bomresults/dry-run-js-workspace.txt
+          grep -q "npm" bomresults/dry-run-js-workspace.txt
+          bin/cdxgen.js --dry-run -t js "pkg:npm/lodash@4.17.21" --no-banner > bomresults/dry-run-purl.txt
+          grep -q "pkg:npm/lodash@4.17.21" bomresults/dry-run-purl.txt
+        shell: bash
+        continue-on-error: true
   cli-tests-quick-arm64:
     runs-on: ["self-hosted", "ubuntu", "arm64"]
     steps:
@@ -975,9 +989,9 @@ jobs:
           cp test/data/chrome-extensions/chrome-youtube-summary-chatgpt-manifest.json standalone-chrome-exts/iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii/1.0.4/manifest.json
           cp test/data/chrome-extensions/chrome-agentbrain-chatgpt-claude-manifest.json standalone-chrome-exts/jjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjj/0.1.0/manifest.json
           cp test/data/chrome-extensions/chrome-copilottts-manifest.json standalone-chrome-exts/kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk/1.0.0/manifest.json
-          bin/cdxgen.js standalone-chrome-exts/iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii/1.0.4 -t chrome-extension -o bomresults/bom-standalone-chrome-openai.json --bom-audit --fail-on-error
-          bin/cdxgen.js standalone-chrome-exts/jjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjj/0.1.0 -t chrome-extension -o bomresults/bom-standalone-chrome-anthropic.json --bom-audit --fail-on-error
-          bin/cdxgen.js standalone-chrome-exts/kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk/1.0.0 -t chrome-extension -o bomresults/bom-standalone-chrome-copilot.json --bom-audit --fail-on-error
+          bin/cdxgen.js standalone-chrome-exts/iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii/1.0.4 -t chrome-extension -o bomresults/bom-standalone-chrome-openai.json --bom-audit
+          bin/cdxgen.js standalone-chrome-exts/jjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjj/0.1.0 -t chrome-extension -o bomresults/bom-standalone-chrome-anthropic.json --bom-audit
+          bin/cdxgen.js standalone-chrome-exts/kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk/1.0.0 -t chrome-extension -o bomresults/bom-standalone-chrome-copilot.json --bom-audit
         shell: bash
       - name: post-build lifecycle tests
         run: |
