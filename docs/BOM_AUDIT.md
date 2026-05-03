@@ -68,7 +68,7 @@ The audit runs as a post-processing step after BOM generation:
 | ----------------------------- | ------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
 | `--bom-audit`                 | boolean | `false` | Enable post-generation security audit                                                                                                       |
 | `--bom-audit-rules-dir`       | string  | —       | Directory containing additional YAML rule files (merged with built-in rules)                                                                |
-| `--bom-audit-categories`      | string  | all     | Comma-separated list of rule categories to enable                                                                                           |
+| `--bom-audit-categories`      | string  | all     | Comma-separated list of rule categories to enable. Unknown categories are rejected, and `ai-inventory` expands to both `ai-agent` and `mcp-server`. |
 | `--bom-audit-min-severity`    | string  | `low`   | Minimum severity to report: `low`, `medium`, `high`                                                                                         |
 | `--bom-audit-fail-severity`   | string  | `high`  | Severity level at or above which findings cause secure mode failure (e.g., `medium` fails on medium, high, and critical)                    |
 | `--bom-audit-scope`           | string  | `all`   | Predictive dependency audit target scope: `all` or `required`                                                                               |
@@ -171,6 +171,7 @@ Rules that evaluate MCP server inventory emitted from JavaScript/TypeScript sour
 | MCP-005 | critical | MCP configuration exposes inline credentials                           |
 | MCP-006 | high     | MCP configuration suggests confused-deputy risk                        |
 | MCP-007 | high     | MCP configuration forwards or passes through bearer-like credentials   |
+| MCP-008 | medium   | Build/post-build SBOM includes an MCP configuration file              |
 
 ### `ai-agent` — AI agent instruction and MCP governance
 
@@ -184,6 +185,11 @@ Rules that evaluate AI agent instruction files, skill files, and inferred MCP su
 | AGT-004 | high     | AI agent instructions reference tunneled or reverse-proxied MCP exposure       |
 | AGT-005 | medium   | AI agent instructions reference non-official MCP wrappers or packages          |
 | AGT-006 | critical | AI agent instruction or skill file contains inline credential patterns         |
+| AGT-007 | medium   | Build/post-build SBOM includes an AI instruction or skill file                |
+
+### `ai-inventory` — Umbrella alias for AI inventory review
+
+Use `ai-inventory` with `--bom-audit-categories` when you want one switch that enables both `ai-agent` and `mcp-server` findings for AI instruction files, skill files, MCP configs, and discovered MCP services.
 
 ### Standards mapping
 

@@ -316,6 +316,29 @@ When adding or modifying **external-facing features** (SCM/network integrations 
 - Use `hardenedGitCommand()` (or `safeSpawnSync` wrappers where applicable) instead of raw process execution.
 - Use `cdxgenAgent` for outbound HTTP and source tokens from `options`/environment without logging credentials.
 
+### BOM property-value hygiene
+
+When emitting CycloneDX `properties`, annotations, evidence objects, or service/component metadata, treat **every value** as potentially secret-bearing unless it is already a small, enumerated, non-sensitive token.
+
+- Never emit raw secrets or likely secret carriers into BOM fields, including:
+  - bearer tokens, API keys, passwords, client secrets, cookies, session IDs, private keys, signed URLs, or authorization headers
+  - raw environment variable values, command-line arguments, header values, or config blobs that may contain credentials
+  - free-form copied text from user/config-controlled sources when it could embed secrets
+- Prefer **booleans, counts, categories, and field names** over raw values. For example:
+  - `credentialExposure=true`
+  - `credentialIndicatorCount=3`
+  - `credentialExposureFieldCount=2`
+  - `credentialReferenceCount=1`
+  - `header:Authorization` as a field label is acceptable; the header value is not
+- Treat URLs and URIs as untrusted. Before emitting them, remove or avoid:
+  - query strings and fragments
+  - `userinfo` (`https://user:pass@host/...`)
+  - signed-token parameters such as `token`, `sig`, `signature`, `X-Amz-Signature`, `X-Goog-Signature`, `access_token`, `id_token`, `client_secret`, `api_key`, and similar aliases
+- Treat command strings as untrusted. Do not emit full commands when arguments may contain credentials; prefer the executable name, transport type, or a redacted/summarized form instead.
+- Treat free-text mirrored metadata as untrusted. Fields such as `cdx:agent:description`, `cdx:skill:metadata`, `cdx:agent:permission`, `cdx:crewai:*`, `cdx:mcp:description`, `cdx:mcp:resourceUri`, `cdx:mcp:configuredEndpoints`, `cdx:mcp:command`, and future `cdx:mcp:auth:*` values must be reviewed for secret-bearing content before being added.
+- If a value is useful for analysis but may contain credentials, emit a safe derivative instead (count, host, scheme, basename, allowlisted enum, or `"redacted"` marker).
+- Add or update tests whenever new emitted properties are introduced to assert that secrets are not copied into BOM output.
+
 ---
 
 ## Environment variables
@@ -387,6 +410,13 @@ pnpm run watch
 - Always check string/path assertions against Windows and POSIX path separator differences (`\` vs `/`).
 - Prefer `node:path` helpers, normalization, or separator-agnostic assertions over hard-coded path literals in tests.
 - When adding or changing tests that inspect file paths, temp directories, command arguments, or serialized activity/log output, verify they still pass on Windows runners and do not assume `/tmp`-style paths.
+
+### Review feedback handling
+
+- Before finalizing work, review feedback from automated code review or validation tools.
+- If a review comment is valid, fix it in the same change rather than leaving it behind.
+- If a review comment is not valid, document why it was not applied in the final summary.
+- Thoroughness is preferred over speed when resolving valid review feedback.
 
 ### Test anatomy
 
@@ -481,6 +511,7 @@ All GitHub Actions workflows pin action SHA digests and have `permissions: {}` a
 - **Do not** construct PURL strings by concatenation — use `new PackageURL(…).toString()`.
 - **Do not** read `process.argv` inside library modules — accept options via the `options` object.
 - **Do not** commit secrets, tokens, or credentials.
+- **Do not** copy raw secret-bearing values into emitted BOM properties, annotations, evidence, endpoints, or service metadata; aggregate, classify, or redact them instead.
 - **Do not** modify generated files under `types/` directly.
 - **Do not** add `console.log` debug statements to production code without gating them on `DEBUG_MODE` or replacing them with `thoughtLog`.
 - **Do not** add or update `pnpm-lock.yaml` unless changing `package.json` dependencies.
