@@ -6,6 +6,7 @@ SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd -- "$SCRIPT_DIR/.." && pwd)"
 readonly PODMAN_SOCKET_RETRIES=10
 
+source "$SCRIPT_DIR/assertions.sh"
 TEST_TMP_DIR=""
 PODMAN_SERVICE_PID=""
 
@@ -17,17 +18,6 @@ cleanup_all() {
   if [ -n "$TEST_TMP_DIR" ]; then
     rm -rf "$TEST_TMP_DIR"
   fi
-}
-
-assert_container_audit_bom() {
-  jq -e '[.annotations[]? | select((.text // "") | contains("cdx:audit:category | container-risk |"))] | length > 0' "$1" >/dev/null || {
-    echo "Expected container-risk audit findings in $1"
-    return 1
-  }
-  jq -e '[.components[]? | select((.properties // []) | any((.name == "cdx:gtfobins:matched" or .name == "cdx:container:matched") and .value == "true"))] | length > 0' "$1" >/dev/null || {
-    echo "Expected GTFOBins or container-risk enrichment properties in $1"
-    return 1
-  }
 }
 
 component_property_signature() {
@@ -96,6 +86,7 @@ run_docker_tests() {
   bin/cdxgen.js "$ubuntu_archive" -p -t docker -o bomresults/bom-ubuntu.tar.json --fail-on-error
   bin/cdxgen.js "$ubuntu_archive" -p -t docker -o bomresults/bom-ubuntu.tar-audit.json --bom-audit --bom-audit-categories container-risk --fail-on-error
   assert_container_audit_bom bomresults/bom-ubuntu.tar-audit.json
+  assert_trivy_tool_identity_bom bomresults/bom-ubuntu.tar-audit.json
   python3 "$SCRIPT_DIR/reconstruct-staged-rootfs.py" "$ubuntu_archive" "$ubuntu_extracted_dir" "$ubuntu_rootfs_dir"
   bin/cdxgen.js "$ubuntu_rootfs_dir" -p -t rootfs -o bomresults/bom-ubuntu.rootfs.json --fail-on-error
   assert_same_component_signature bomresults/bom-ubuntu.tar.json bomresults/bom-ubuntu.rootfs.json
@@ -106,6 +97,7 @@ run_docker_tests() {
   bin/cdxgen.js "$alpine_archive" -p -t docker -o bomresults/bom-alpine.tar.json --fail-on-error
   bin/cdxgen.js "$alpine_archive" -p -t docker -o bomresults/bom-alpine.tar-audit.json --bom-audit --bom-audit-categories container-risk --fail-on-error
   assert_container_audit_bom bomresults/bom-alpine.tar-audit.json
+  assert_trivy_tool_identity_bom bomresults/bom-alpine.tar-audit.json
   python3 "$SCRIPT_DIR/reconstruct-staged-rootfs.py" "$alpine_archive" "$alpine_extracted_dir" "$alpine_rootfs_dir"
   bin/cdxgen.js "$alpine_rootfs_dir" -p -t rootfs -o bomresults/bom-alpine.rootfs.json --fail-on-error
   assert_same_component_signature bomresults/bom-alpine.tar.json bomresults/bom-alpine.rootfs.json
@@ -126,10 +118,12 @@ run_podman_tests() {
   docker pull alpine:latest
   bin/cdxgen.js alpine:latest -p -t docker -o bomresults/bom-docker-alpine-audit.json --bom-audit --bom-audit-categories container-risk --fail-on-error
   assert_container_audit_bom bomresults/bom-docker-alpine-audit.json
+  assert_trivy_tool_identity_bom bomresults/bom-docker-alpine-audit.json
   docker save -o "$docker_archive" alpine:latest
   docker rmi alpine:latest
   bin/cdxgen.js "$docker_archive" -p -t docker -o "$docker_archive_audit" --bom-audit --bom-audit-categories container-risk --fail-on-error
   assert_container_audit_bom "$docker_archive_audit"
+  assert_trivy_tool_identity_bom "$docker_archive_audit"
 
   export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
   mkdir -p "$XDG_RUNTIME_DIR/podman"
@@ -185,10 +179,12 @@ run_nerdctl_tests() {
   docker pull alpine:latest
   bin/cdxgen.js alpine:latest -p -t docker -o bomresults/bom-docker-alpine-audit.json --bom-audit --bom-audit-categories container-risk --fail-on-error
   assert_container_audit_bom bomresults/bom-docker-alpine-audit.json
+  assert_trivy_tool_identity_bom bomresults/bom-docker-alpine-audit.json
   docker save -o "$docker_archive" alpine:latest
   docker rmi alpine:latest
   bin/cdxgen.js "$docker_archive" -p -t docker -o "$docker_archive_audit" --bom-audit --bom-audit-categories container-risk --fail-on-error
   assert_container_audit_bom "$docker_archive_audit"
+  assert_trivy_tool_identity_bom "$docker_archive_audit"
 
   export DOCKER_CMD=nerdctl
   nerdctl pull docker.io/library/alpine:latest
