@@ -642,5 +642,137 @@
       "sensitiveOperations": $prop($, 'cdx:github:step:sensitiveOperations'),
       "sensitiveContextRefs": $prop($, 'cdx:github:step:sensitiveContextRefs'),
       "dispatchKinds": $prop($, 'cdx:github:step:dispatchKinds')
+     }
+
+- id: CI-022
+  name: "npm setup action disables build cache despite resolved package distributions"
+  description: "Explicitly disabling setup-node caching reduces tamper resistance and reviewability when npm dependencies are resolved from remote package distributions"
+  severity: medium
+  category: ci-permission
+  attack:
+    tactics: [TA0005]
+    techniques: [T1195.001]
+  condition: |
+    $auditComponents($)[
+      $prop($, 'cdx:github:action:disablesBuildCache') = 'true'
+      and $prop($, 'cdx:github:action:buildCacheEcosystem') = 'npm'
+      and $count($$.components[
+        $startsWith(purl, 'pkg:npm/')
+        and (
+          $contains($lowercase($nullSafeProp($, 'cdx:npm:manifestSourceType')), 'git')
+          or $contains($lowercase($nullSafeProp($, 'cdx:npm:manifestSourceType')), 'url')
+        )
+        and $count(externalReferences[
+          type = 'distribution'
+          and (
+            $startsWith($lowercase(url), 'git+')
+            or $startsWith($lowercase(url), 'http://')
+            or $startsWith($lowercase(url), 'https://')
+          )
+        ]) > 0
+      ]) > 0
+    ]
+  location: |
+    {
+      "bomRef": $."bom-ref",
+      "purl": purl,
+      "file": $prop($, 'cdx:github:workflow:file')
+    }
+  message: "GitHub Action '{{ $prop($, 'cdx:github:action:uses') }}' explicitly disables npm build caching while resolved npm package distributions are present in the BOM"
+  mitigation: "Keep setup-node caching enabled unless you have a reviewed exception; disabling cache can weaken integrity checks and provenance review for resolved npm artifacts"
+  evidence: |
+    {
+      "cacheDisableInput": $prop($, 'cdx:github:action:buildCacheDisableInput'),
+      "cacheDisableValue": $prop($, 'cdx:github:action:buildCacheDisableValue'),
+      "matchingPackages": $$.components[
+        $startsWith(purl, 'pkg:npm/')
+        and (
+          $contains($lowercase($nullSafeProp($, 'cdx:npm:manifestSourceType')), 'git')
+          or $contains($lowercase($nullSafeProp($, 'cdx:npm:manifestSourceType')), 'url')
+        )
+        and $count(externalReferences[
+          type = 'distribution'
+          and (
+            $startsWith($lowercase(url), 'git+')
+            or $startsWith($lowercase(url), 'http://')
+            or $startsWith($lowercase(url), 'https://')
+          )
+        ]) > 0
+      ].purl
     }
 
+- id: CI-023
+  name: "Python setup action disables build cache despite resolved package distributions"
+  description: "Explicitly disabling setup-python caching reduces tamper resistance and reviewability when PyPI dependencies are resolved from remote archives or VCS sources"
+  severity: medium
+  category: ci-permission
+  attack:
+    tactics: [TA0005]
+    techniques: [T1195.001]
+  condition: |
+    $auditComponents($)[
+      $prop($, 'cdx:github:action:disablesBuildCache') = 'true'
+      and $prop($, 'cdx:github:action:buildCacheEcosystem') = 'pypi'
+      and $count($$.components[
+        $startsWith(purl, 'pkg:pypi/')
+        and (
+          $contains($lowercase($nullSafeProp($, 'cdx:pypi:manifestSourceType')), 'git')
+          or $contains($lowercase($nullSafeProp($, 'cdx:pypi:manifestSourceType')), 'url')
+        )
+      ]) > 0
+    ]
+  location: |
+    {
+      "bomRef": $."bom-ref",
+      "purl": purl,
+      "file": $prop($, 'cdx:github:workflow:file')
+    }
+  message: "GitHub Action '{{ $prop($, 'cdx:github:action:uses') }}' explicitly disables Python build caching while resolved PyPI package distributions are present in the BOM"
+  mitigation: "Keep setup-python caching enabled when lockfiles resolve remote archives or VCS sources unless you have a reviewed exception"
+  evidence: |
+    {
+      "cacheDisableInput": $prop($, 'cdx:github:action:buildCacheDisableInput'),
+      "cacheDisableValue": $prop($, 'cdx:github:action:buildCacheDisableValue'),
+      "matchingPackages": $$.components[
+        $startsWith(purl, 'pkg:pypi/')
+        and (
+          $contains($lowercase($nullSafeProp($, 'cdx:pypi:manifestSourceType')), 'git')
+          or $contains($lowercase($nullSafeProp($, 'cdx:pypi:manifestSourceType')), 'url')
+        )
+      ].purl
+    }
+
+- id: CI-024
+  name: "Cargo setup action disables build cache despite manifest-declared git dependencies"
+  description: "Explicitly disabling Cargo setup caching reduces tamper resistance and reviewability when Cargo manifests rely on git dependencies"
+  severity: medium
+  category: ci-permission
+  attack:
+    tactics: [TA0005]
+    techniques: [T1195.001]
+  condition: |
+    $auditComponents($)[
+      $prop($, 'cdx:github:action:disablesBuildCache') = 'true'
+      and $prop($, 'cdx:github:action:buildCacheEcosystem') = 'cargo'
+      and $count($$.components[
+        $startsWith(purl, 'pkg:cargo/')
+        and $hasProp($, 'cdx:cargo:git')
+      ]) > 0
+    ]
+  location: |
+    {
+      "bomRef": $."bom-ref",
+      "purl": purl,
+      "file": $prop($, 'cdx:github:workflow:file')
+    }
+  message: "GitHub Action '{{ $prop($, 'cdx:github:action:uses') }}' explicitly disables Cargo build caching while manifest-declared Cargo git dependencies are present in the BOM"
+  mitigation: "Keep Cargo setup caching enabled when manifests rely on git dependencies unless you have a reviewed exception"
+  evidence: |
+    {
+      "cacheDisableInput": $prop($, 'cdx:github:action:buildCacheDisableInput'),
+      "cacheDisableValue": $prop($, 'cdx:github:action:buildCacheDisableValue'),
+      "matchingPackages": $$.components[
+        $startsWith(purl, 'pkg:cargo/')
+        and $hasProp($, 'cdx:cargo:git')
+      ].purl
+    }
