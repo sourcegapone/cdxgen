@@ -719,8 +719,8 @@ packages:
   hermes-parser@0.34.0:
     resolution: {integrity: sha512-tcgan5UNZvu3WwmR3jDAlmwEAR2CMv8cwQVMe5j0NrLQkstf0l3ULbYPuTZWbXxbPa0PyZPiq5LYEcFVmhM9LQ==, tarball: https://registry.npmjs.org/hermes-parser/-/hermes-parser-0.34.0.tgz}
 
-  hosted-git-info@9.0.2:
-    resolution: {integrity: sha512-M422h7o/BR3rmCQ8UHi7cyyMqKltdP9Uo+J2fXK+RSAY+wTcKOIRyhTuKv4qn+DJf3g+PL890AzId5KZpX+CBg==, tarball: https://registry.npmjs.org/hosted-git-info/-/hosted-git-info-9.0.2.tgz}
+  hosted-git-info@9.0.3:
+    resolution: {integrity: sha512-Hc+ghLoSt6QaYZUv0WBiIvmMDZuZZ7oaDvdH8MbfOO4lOsxdXLEvuC6ePoGs9H1X9oCLyq6+NVN0MKqD+ydxyg==, tarball: https://registry.npmjs.org/hosted-git-info/-/hosted-git-info-9.0.3.tgz}
     engines: {node: ^20.17.0 || >=22.9.0}
 
   htmlparser2@10.1.0:
@@ -1336,7 +1336,7 @@ snapshots:
     dependencies:
       '@npmcli/git': 7.0.2
       glob: 13.0.6
-      hosted-git-info: 9.0.2
+      hosted-git-info: 9.0.3
       json-parse-even-better-errors: 5.0.0
       proc-log: 6.1.0
       semver: 7.7.4
@@ -1689,7 +1689,7 @@ snapshots:
       hermes-estree: 0.34.0
     optional: true
 
-  hosted-git-info@9.0.2:
+  hosted-git-info@9.0.3:
     dependencies:
       lru-cache: 11.3.5
 
@@ -1802,7 +1802,7 @@ snapshots:
 
   npm-package-arg@13.0.2:
     dependencies:
-      hosted-git-info: 9.0.2
+      hosted-git-info: 9.0.3
       proc-log: 6.1.0
       semver: 7.7.4
       validate-npm-package-name: 7.0.2

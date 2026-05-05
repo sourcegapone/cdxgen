@@ -1,3 +1,4 @@
+export function isAllowedHttpHost(hostname: any): boolean;
 /**
  * Method to safely parse value passed via the query string or body.
  *

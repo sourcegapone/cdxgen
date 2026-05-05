@@ -1049,6 +1049,19 @@ export function parseConanLockData(conanLockData: string): {
  */
 export function parseConanData(conanData: string): Object[];
 /**
+ * Parse Collider lock file data (collider.lock) and return the package list and
+ * parent component dependencies.
+ *
+ * @param {string} colliderLockData Raw JSON string of the Collider lock file
+ * @param {string} lockFile Source lock file path
+ * @returns {{ pkgList: Object[], dependencies: Object, parentComponentDependencies: string[] }}
+ */
+export function parseColliderLockData(colliderLockData: string, lockFile: string): {
+    pkgList: Object[];
+    dependencies: Object;
+    parentComponentDependencies: string[];
+};
+/**
  * Parse Leiningen project.clj data and extract dependency packages.
  *
  * @param {string} leinData Raw text contents of a Leiningen project.clj file
@@ -1740,6 +1753,22 @@ export function parsePackageJsonName(name: string | Object): {
     projectName: string | null;
     moduleName: string | null;
 };
+/**
+ * Collect bom-refs from metadata.tools entries.
+ *
+ * @param {Object[]|Object} tools CycloneDX metadata.tools section
+ * @param {Function} predicate Optional filter function
+ * @returns {string[]} Unique tool bom-refs
+ */
+export function extractToolRefs(tools: Object[] | Object, predicate: Function): string[];
+/**
+ * Attach evidence.identity.tools references to the supplied subjects.
+ *
+ * @param {Object|Object[]} subjects Component or service objects
+ * @param {string[]} toolRefs Tool bom-refs
+ * @returns {Object|Object[]} The same mutated subject(s)
+ */
+export function attachIdentityTools(subjects: Object | Object[], toolRefs: string[]): Object | Object[];
 /**
  * Method to add occurrence evidence for components based on import statements. Currently useful for js
  *

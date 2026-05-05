@@ -14,7 +14,7 @@ export namespace mcpConfigParser {
         services: {
             "bom-ref": string;
             authenticated: boolean | undefined;
-            endpoints: any[];
+            endpoints: string[];
             group: string;
             name: any;
             properties: {

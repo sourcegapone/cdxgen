@@ -119,6 +119,7 @@ export function printEnvironmentAuditFindings(envAuditFindings?: EnvAuditFinding
  * @param {EnvAuditFinding[]} envAuditFindings Audit findings to display
  */
 export function displaySelfThreatModel(filePath: string, config: Object, options: Object, envAuditFindings: EnvAuditFinding[]): void;
+export function buildTableSummaryLines(bomJson: Object, filterTypes: string[] | undefined, summaryText: string | undefined, displayedProvenanceCount?: number): string[];
 export function buildDependencyTreeLegendLines(treeGraphics: string[]): string[];
 export function buildDependencyTreeLines(dependencies: Object[], mode?: string): string[];
 export type EnvAuditFinding = {

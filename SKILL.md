@@ -39,7 +39,7 @@ cdxgen [path] [options]
 |                | `--deep`                  | Enable deep parsing (C/C++, OS, OCI, live systems)                                                                                                               |
 | **Output**     | `-o, --output <file>`     | Destination path (default: `bom.json`)                                                                                                                           |
 |                | `-p, --print`             | Print human-readable table/tree to stdout                                                                                                                        |
-|                | `--dry-run`               | Read-only preview mode. Record reads plus blocked writes, commands, temp dirs, network, and submissions before any real execution                               |
+|                | `--dry-run`               | Read-only preview mode. Record reads plus blocked writes, commands, temp dirs, network, and submissions before any real execution                                |
 |                | `--activity-report <fmt>` | Hidden machine-readable dry-run/debug report: `json` or `jsonl`                                                                                                  |
 |                | `--spec-version <ver>`    | CycloneDX version: `1.4`, `1.5`, `1.6` (default), `1.7`                                                                                                          |
 | **Profiles**   | `--profile <name>`        | `generic` (default), `appsec`, `research`, `operational`, `threat-modeling`, `license-compliance`, `ml`/`machine-learning`, `ml-deep`/`deep-learning`, `ml-tiny` |
