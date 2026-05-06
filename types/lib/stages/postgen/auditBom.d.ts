@@ -1,3 +1,10 @@
+export function getBomAuditDryRunSupportSummary(options?: {}): Promise<{
+    fullCount: number;
+    noCount: number;
+    partialCount: number;
+    totalRules: number;
+}>;
+export function formatDryRunSupportSummary(summary: any): string;
 /**
  * Audit BOM formulation section using JSONata-powered rule engine
  * @param {Object} bomJson - Generated CycloneDX BOM

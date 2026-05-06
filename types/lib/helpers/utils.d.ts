@@ -1,3 +1,12 @@
+export function isSensitiveEnvironmentVariableName(varName: any): boolean;
+export function recordObservedActivity(kind: any, target: any, options?: {}): any;
+export function recordDecisionActivity(target: any, options?: {}): any;
+export function recordDiscoveryActivity(target: any, options?: {}): any;
+export function recordPolicyActivity(target: any, options?: {}): any;
+export function recordSymlinkResolution(sourcePath: any, resolvedPath: any, options?: {}): any;
+export function recordEnvironmentRead(varName: any, options?: {}): any;
+export function recordSensitiveFileRead(filePath: any, options?: {}): any;
+export function readEnvironmentVariable(varName: any, options?: {}): any;
 export function setDryRunMode(enabled: any): void;
 export function createDryRunError(action: any, target: any, reason: any): Error;
 export function isDryRunError(error: any): boolean;
@@ -26,7 +35,7 @@ export function safeMkdtempSync(prefix: any, options?: undefined): any;
 export function safeRmSync(filePath: any, options?: undefined): any;
 export function safeUnlinkSync(filePath: any): any;
 export function safeCopyFileSync(src: any, dest: any, mode?: undefined): any;
-export function safeExtractArchive(sourcePath: any, targetPath: any, extractor: any, kind?: string): Promise<boolean>;
+export function safeExtractArchive(sourcePath: any, targetPath: any, extractor: any, kind?: string, options?: undefined): Promise<boolean>;
 /**
  * Safe wrapper around spawnSync that enforces permission checks, injects default
  * options (maxBuffer, encoding, timeout), warns about unsafe Python and pip/uv
@@ -99,6 +108,7 @@ export function hasAnyProjectType(projectTypes: any[], options: Object, defaultS
  * @returns {Boolean} True if the package manager is allowed
  */
 export function isPackageManagerAllowed(name: string, conflictingManagers: any[], options: Object): boolean;
+export function isAllowedHttpHost(hostname: any, allowedHostsEnv?: any): boolean;
 /**
  * Method to get files matching a pattern
  *

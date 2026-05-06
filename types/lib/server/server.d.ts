@@ -1,4 +1,3 @@
-export function isAllowedHttpHost(hostname: any): boolean;
 /**
  * Method to safely parse value passed via the query string or body.
  *
@@ -28,6 +27,8 @@ export function parseQueryString(q: Object, body?: Object, options?: Object): Ob
  * @returns {Object} Key/value map of query parameters from the request URL
  */
 export function getQueryParams(req: Object): Object;
+import { isAllowedHttpHost } from "../helpers/utils.js";
 export function configureServer(cdxgenServer: any): void;
 export function start(options: any): void;
+export { isAllowedHttpHost };
 //# sourceMappingURL=server.d.ts.map
