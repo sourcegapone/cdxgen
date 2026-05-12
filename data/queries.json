@@ -38,12 +38,26 @@
   "apt_sources": {
     "query": "select * from apt_sources;",
     "description": "Retrieves all the APT sources to install packages from in the target Linux system.",
-    "purlType": "deb"
+    "purlType": "generic",
+    "componentType": "data"
+  },
+  "apt_ppa_sources": {
+    "query": "SELECT COALESCE(name, base_uri, source) as name, release as version, maintainer as publisher, source as description, source, base_uri, release, components, architectures FROM apt_sources WHERE base_uri LIKE '%ppa.launchpadcontent.net%' OR base_uri LIKE '%ppa.launchpad.net%';",
+    "description": "APT Personal Package Archive (PPA) sources configured on the target Linux system.",
+    "purlType": "generic",
+    "componentType": "data"
   },
   "yum_sources": {
     "query": "select * from yum_sources;",
     "description": "Display yum package manager sources.",
-    "purlType": "yum"
+    "purlType": "generic",
+    "componentType": "data"
+  },
+  "trusted_gpg_keys": {
+    "query": "SELECT COALESCE(filename, path) as name, sha256 as version, path as description, path, directory, filename, uid, gid, mode, size, mtime, sha1, sha256, CASE WHEN path LIKE '/etc/apt/%' OR path LIKE '/usr/share/keyrings/%' THEN 'apt' WHEN path LIKE '/etc/pki/rpm-gpg/%' OR path LIKE '/usr/share/distribution-gpg-keys/%' THEN 'rpm' WHEN path LIKE '/etc/apk/keys/%' THEN 'apk' ELSE 'generic' END AS trust_domain FROM file JOIN hash USING (path) WHERE (path = '/etc/apt/trusted.gpg' OR path LIKE '/etc/apt/trusted.gpg.d/%' OR path LIKE '/usr/share/keyrings/%' OR path LIKE '/etc/pki/rpm-gpg/%' OR path LIKE '/usr/share/distribution-gpg-keys/%' OR path LIKE '/etc/apk/keys/%') AND type = 'regular';",
+    "description": "Trusted repository keyring material for APT, RPM/DNF, and APK package trust validation.",
+    "purlType": "generic",
+    "componentType": "cryptographic-asset"
   },
   "portage_packages": {
     "query": "select * from portage_packages;",
@@ -59,6 +73,11 @@
     "query": "select * from python_packages;",
     "description": "Python packages installed on system.",
     "purlType": "pypi"
+  },
+  "npm_packages": {
+    "query": "SELECT * FROM npm_packages;",
+    "description": "Node packages installed on the system, including recursively discovered modern package manager layouts.",
+    "purlType": "npm"
   },
   "system_info_snapshot": {
     "query": "SELECT * FROM system_info;",
@@ -108,9 +127,27 @@
     "purlType": "swid",
     "componentType": "data"
   },
+  "sysctl_hardening": {
+    "query": "SELECT name, current_value as version, name as sysctl_key, current_value FROM sysctl WHERE name IN ('kernel.randomize_va_space', 'kernel.kptr_restrict', 'net.ipv4.conf.all.accept_redirects', 'net.ipv4.conf.default.accept_redirects', 'net.ipv4.conf.all.send_redirects', 'net.ipv4.conf.default.send_redirects');",
+    "description": "Linux sysctl posture entries aligned with common hardening baselines.",
+    "purlType": "swid",
+    "componentType": "data"
+  },
   "kernel_modules": {
     "query": "SELECT * FROM kernel_modules;",
     "description": "Linux kernel modules both loaded and within the load search path.",
+    "purlType": "swid",
+    "componentType": "data"
+  },
+  "secureboot_certificates": {
+    "query": "SELECT COALESCE(common_name, subject, sha1) as name, COALESCE(subject_key_id, sha1) as version, issuer as publisher, subject as description, common_name, subject, issuer, serial, sha1, revoked, path, is_ca, self_signed, key_usage, authority_key_id, subject_key_id, signing_algorithm, key_algorithm, key_strength, not_valid_before, not_valid_after FROM secureboot_certificates;",
+    "description": "UEFI Secure Boot certificate inventory, including trusted and revoked entries, for firmware trust posture reviews.",
+    "purlType": "swid",
+    "componentType": "data"
+  },
+  "mount_hardening": {
+    "query": "SELECT path as name, flags as version, device as description, path, device, type, flags FROM mounts WHERE path IN ('/tmp', '/var/tmp', '/dev/shm', '/home');",
+    "description": "Linux mount points commonly reviewed for noexec, nodev, and nosuid hardening.",
     "purlType": "swid",
     "componentType": "data"
   },

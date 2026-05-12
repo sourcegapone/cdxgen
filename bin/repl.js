@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import fs from "node:fs";
+import { readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import process from "node:process";
@@ -21,6 +21,12 @@ import {
   printTable,
   printVulnerabilities,
 } from "../lib/helpers/display.js";
+import {
+  getPropertyValue,
+  getSourceDerivedCryptoComponents,
+  getUnpackagedExecutableComponents,
+  getUnpackagedSharedLibraryComponents,
+} from "../lib/helpers/inventoryStats.js";
 import { readBinary } from "../lib/helpers/protobom.js";
 import {
   getProvenanceComponents,
@@ -28,7 +34,14 @@ import {
 } from "../lib/helpers/provenanceUtils.js";
 import { toCycloneDxLikeBom } from "../lib/helpers/spdxUtils.js";
 import { table } from "../lib/helpers/table.js";
-import { getTmpDir } from "../lib/helpers/utils.js";
+import {
+  getTmpDir,
+  isDryRun,
+  safeExistsSync,
+  safeMkdirSync,
+  safeMkdtempSync,
+  safeWriteSync,
+} from "../lib/helpers/utils.js";
 import { getBomWithOras } from "../lib/managers/oci.js";
 import { validateBom } from "../lib/validator/bomValidator.js";
 
@@ -55,13 +68,30 @@ const cdxArt = `
 
 console.log(cdxArt);
 
-if (process.env?.CDXGEN_NODE_OPTIONS) {
+if (process.env.CDXGEN_NODE_OPTIONS) {
   process.env.NODE_OPTIONS = `${process.env.NODE_OPTIONS || ""} ${process.env.CDXGEN_NODE_OPTIONS}`;
 }
 
 // The current sbom is stored here
 let sbom;
 const getInteractiveBom = () => toCycloneDxLikeBom(sbom);
+
+function getContainerRegistryHost(reference) {
+  const trimmedReference = `${reference || ""}`.trim().toLowerCase();
+  if (!trimmedReference) {
+    return undefined;
+  }
+  const slashIndex = trimmedReference.indexOf("/");
+  if (slashIndex <= 0) {
+    return undefined;
+  }
+  return trimmedReference.slice(0, slashIndex).replace(/:\d+$/, "");
+}
+
+function isSupportedSbomRegistryReference(reference) {
+  const registryHost = getContainerRegistryHost(reference);
+  return registryHost === "ghcr.io" || registryHost === "docker.io";
+}
 
 function unescapeAnnotationText(value) {
   return String(value || "")
@@ -143,13 +173,6 @@ function printAuditTable(title, rows) {
   );
 }
 
-function getPropertyValue(propertiesOrObject, propertyName) {
-  const properties = Array.isArray(propertiesOrObject)
-    ? propertiesOrObject
-    : propertiesOrObject?.properties;
-  return properties?.find((property) => property.name === propertyName)?.value;
-}
-
 function isLikelyObom(bom) {
   return Boolean(
     bom?.components?.some((comp) =>
@@ -223,9 +246,9 @@ function getCargoFormulationEntries(bom) {
 
 let historyFile;
 const historyConfigDir = join(homedir(), ".config", ".cdxgen");
-if (!process.env.CDXGEN_REPL_HISTORY && !fs.existsSync(historyConfigDir)) {
+if (!process.env.CDXGEN_REPL_HISTORY && !safeExistsSync(historyConfigDir)) {
   try {
-    fs.mkdirSync(historyConfigDir, { recursive: true });
+    safeMkdirSync(historyConfigDir, { recursive: true });
     historyFile = join(historyConfigDir, ".repl_history");
   } catch (_e) {
     // ignore
@@ -235,9 +258,14 @@ if (!process.env.CDXGEN_REPL_HISTORY && !fs.existsSync(historyConfigDir)) {
 }
 
 export const importSbom = (sbomOrPath) => {
-  if (sbomOrPath?.endsWith(".json") && fs.existsSync(sbomOrPath)) {
+  const importTarget = String(sbomOrPath || "").trim();
+  if (!importTarget) {
+    console.log("⚠ An SBOM path or image reference is required.");
+    return;
+  }
+  if (importTarget.endsWith(".json") && safeExistsSync(importTarget)) {
     try {
-      sbom = JSON.parse(fs.readFileSync(sbomOrPath, "utf-8"));
+      sbom = JSON.parse(readFileSync(importTarget, "utf-8"));
       let bomType = "SBOM";
       if (isSpdxJsonLd(sbom)) {
         bomType = "SPDX";
@@ -245,7 +273,7 @@ export const importSbom = (sbomOrPath) => {
       if (sbom?.vulnerabilities && Array.isArray(sbom.vulnerabilities)) {
         bomType = "VDR";
       }
-      console.log(`✅ ${bomType} imported successfully from ${sbomOrPath}`);
+      console.log(`✅ ${bomType} imported successfully from ${importTarget}`);
       printSummary(sbom);
       if (isLikelyObom(sbom)) {
         console.log(
@@ -263,32 +291,33 @@ export const importSbom = (sbomOrPath) => {
         );
       }
     } catch (e) {
-      console.log(`⚠ Unable to import the BOM from ${sbomOrPath} due to ${e}`);
+      console.log(
+        `⚠ Unable to import the BOM from ${importTarget} due to ${e}`,
+      );
     }
   } else if (
-    (sbomOrPath?.endsWith(".cdx") || sbomOrPath?.endsWith(".proto")) &&
-    fs.existsSync(sbomOrPath)
+    (importTarget.endsWith(".cdx") || importTarget.endsWith(".proto")) &&
+    safeExistsSync(importTarget)
   ) {
-    sbom = readBinary(sbomOrPath, true);
+    sbom = readBinary(importTarget, true);
     printSummary(sbom);
-  } else if (
-    sbomOrPath.startsWith("ghcr.io") ||
-    sbomOrPath.startsWith("docker.io")
-  ) {
+  } else if (isSupportedSbomRegistryReference(importTarget)) {
     try {
-      sbom = getBomWithOras(sbomOrPath);
+      sbom = getBomWithOras(importTarget);
       if (sbom) {
         printSummary(sbom);
       } else {
         console.log(
-          `cyclonedx sbom attachment was not found within ${sbomOrPath}`,
+          `cyclonedx sbom attachment was not found within ${importTarget}`,
         );
       }
     } catch (e) {
-      console.log(`⚠ Unable to import the BOM from ${sbomOrPath} due to ${e}`);
+      console.log(
+        `⚠ Unable to import the BOM from ${importTarget} due to ${e}`,
+      );
     }
   } else {
-    console.log(`⚠ ${sbomOrPath} is invalid.`);
+    console.log(`⚠ ${importTarget} is invalid.`);
   }
 };
 // Load any sbom passed from the command line
@@ -304,7 +333,7 @@ if (process.argv.length > 2) {
       "💭 Type .auditfindings to review cdx-audit and bom-audit annotations.",
     );
   }
-} else if (fs.existsSync("bom.json")) {
+} else if (safeExistsSync("bom.json")) {
   // If the current directory has a bom.json load it
   importSbom("bom.json");
 } else {
@@ -333,7 +362,7 @@ cdxgenRepl.defineCommand("create", {
   help: "create an SBOM for the given path",
   async action(sbomOrPath) {
     this.clearBufferedCommand();
-    const tempDir = fs.mkdtempSync(join(getTmpDir(), "cdxgen-repl-"));
+    const tempDir = safeMkdtempSync(join(getTmpDir(), "cdxgen-repl-"));
     const bomFile = join(tempDir, "bom.json");
     const bomNSData = await createBom(sbomOrPath, {
       multiProject: true,
@@ -447,7 +476,7 @@ cdxgenRepl.defineCommand("search", {
           console.log(e);
         }
       } else {
-        console.log("⚠ Specify the search string. Eg: .search <search string>");
+        console.log('⚠ Specify the search string. Eg: .search "search string"');
       }
     } else {
       console.log(
@@ -596,6 +625,90 @@ cdxgenRepl.defineCommand("cryptos", {
     this.displayPrompt();
   },
 });
+cdxgenRepl.defineCommand("sourcecryptos", {
+  help: "show source-derived cryptographic assets detected from JS AST analysis",
+  action() {
+    const interactiveBom = getInteractiveBom();
+    if (!interactiveBom?.components) {
+      console.log("⚠ No BOM is loaded. Use .import command to import an SBOM");
+      this.displayPrompt();
+      return;
+    }
+    const sourceCryptoComponents = getSourceDerivedCryptoComponents(
+      interactiveBom.components,
+    );
+    if (!sourceCryptoComponents.length) {
+      console.log(
+        "No source-derived crypto assets found. Generate a CBOM or SBOM with source crypto analysis to use this view.",
+      );
+      this.displayPrompt();
+      return;
+    }
+    printTable(
+      { components: sourceCryptoComponents, dependencies: [] },
+      ["cryptographic-asset"],
+      undefined,
+      `Found ${sourceCryptoComponents.length} source-derived cryptographic asset component(s).`,
+    );
+    this.displayPrompt();
+  },
+});
+cdxgenRepl.defineCommand("unpackagedbins", {
+  help: "show executable file components that were not matched to OS package ownership",
+  action() {
+    const interactiveBom = getInteractiveBom();
+    if (!interactiveBom?.components) {
+      console.log("⚠ No BOM is loaded. Use .import command to import an SBOM");
+      this.displayPrompt();
+      return;
+    }
+    const unpackagedExecutables = getUnpackagedExecutableComponents(
+      interactiveBom.components,
+    );
+    if (!unpackagedExecutables.length) {
+      console.log(
+        "No unpackaged executable file components found. Import a container or rootfs BOM with native file inventory to use this view.",
+      );
+      this.displayPrompt();
+      return;
+    }
+    printTable(
+      { components: unpackagedExecutables, dependencies: [] },
+      ["file"],
+      undefined,
+      `Found ${unpackagedExecutables.length} executable file component(s) that were not traced to OS package ownership.`,
+    );
+    this.displayPrompt();
+  },
+});
+cdxgenRepl.defineCommand("unpackagedlibs", {
+  help: "show shared library file components that were not matched to OS package ownership",
+  action() {
+    const interactiveBom = getInteractiveBom();
+    if (!interactiveBom?.components) {
+      console.log("⚠ No BOM is loaded. Use .import command to import an SBOM");
+      this.displayPrompt();
+      return;
+    }
+    const unpackagedSharedLibraries = getUnpackagedSharedLibraryComponents(
+      interactiveBom.components,
+    );
+    if (!unpackagedSharedLibraries.length) {
+      console.log(
+        "No unpackaged shared library file components found. Import a container or rootfs BOM with native file inventory to use this view.",
+      );
+      this.displayPrompt();
+      return;
+    }
+    printTable(
+      { components: unpackagedSharedLibraries, dependencies: [] },
+      ["file"],
+      undefined,
+      `Found ${unpackagedSharedLibraries.length} shared library file component(s) that were not traced to OS package ownership.`,
+    );
+    this.displayPrompt();
+  },
+});
 cdxgenRepl.defineCommand("frameworks", {
   help: "print the components of type framework as a table",
   action() {
@@ -660,7 +773,14 @@ cdxgenRepl.defineCommand("save", {
       if (!saveToFile) {
         saveToFile = "bom.json";
       }
-      fs.writeFileSync(saveToFile, JSON.stringify(sbom, null, null));
+      if (isDryRun) {
+        console.log(
+          `⚠ Dry run mode blocks saving the BOM to ${saveToFile}. Disable --dry-run or CDXGEN_DRY_RUN to persist it.`,
+        );
+        this.displayPrompt();
+        return;
+      }
+      safeWriteSync(saveToFile, JSON.stringify(sbom, null, 2));
       console.log(`BOM saved successfully to ${saveToFile}`);
     } else {
       console.log(
@@ -1249,6 +1369,7 @@ cdxgenRepl.defineCommand("tagcloud", {
   "docker_volumes",
   "etc_hosts",
   "firefox_addons",
+  "gatekeeper",
   "vscode_extensions",
   "homebrew_packages",
   "installed_applications",
@@ -1265,8 +1386,10 @@ cdxgenRepl.defineCommand("tagcloud", {
   "portage_packages",
   "process_events",
   "processes",
+  "secureboot_certificates",
   "privilege_transitions",
   "privileged_listening_ports",
+  "npm_packages",
   "python_packages",
   "rpm_packages",
   "scheduled_tasks",
@@ -1291,6 +1414,7 @@ cdxgenRepl.defineCommand("tagcloud", {
   "npm_packages",
   "opera_extensions",
   "pipes_snapshot",
+  "process_open_handles_snapshot",
   "process_open_sockets",
   "safari_extensions",
   "scheduled_tasks",

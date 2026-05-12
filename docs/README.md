@@ -153,6 +153,8 @@ For offline or staged scans, point cdxgen at a locally reconstructed root filesy
 cdxgen /tmp/remote_target -o /tmp/bom.json -t rootfs
 ```
 
+With the packaged helpers installed, rootfs and container BOMs now gain repository trust-source components, deep keyring / CA-store `cryptographic-asset` components, native CycloneDX origin fields such as `supplier`, `manufacturer`, and `authors` for OS package trust metadata, plus additional package trust-state properties such as `PackageArchitecture`, `PackageSource`, and `PackageStatus`.
+
 You can also pass the .tar file of a container image.
 
 ```shell
@@ -176,7 +178,7 @@ podman system service -t 0 &
 
 #### **Generate OBOM**
 
-You can use the `obom` command to generate an OBOM for a live system or a VM for compliance and vulnerability management purposes. Windows and Linux operating systems are supported in this mode.
+You can use the `obom` command to generate an OBOM for a live system or a VM for compliance and vulnerability management purposes. Linux, Windows, and macOS are supported in this mode, though some macOS tables require elevated privileges and Full Disk Access.
 
 ```shell
 # obom is an alias for cdxgen -t os
@@ -184,7 +186,11 @@ obom
 # cdxgen -t os
 ```
 
-This feature is powered by osquery, which is [installed](https://github.com/cdxgen/cdxgen-plugins-bin/blob/main/build.sh#L8) along with the binary plugins. cdxgen would opportunistically try to detect as many components, apps, and extensions as possible using the [default queries](https://github.com/cdxgen/cdxgen/blob/master/data/queries.json). The process would take several minutes and result in an SBOM file with thousands of components of various types such as operating-system, device-drivers, files, and data.
+This feature is powered by osquery, which is [installed](https://github.com/cdxgen/cdxgen-plugins-bin/blob/main/build.sh#L8) along with the binary plugins. cdxgen would opportunistically try to detect as many components, apps, and extensions as possible using the platform-specific default queries under `data/queries*.json`. With osquery 5.23.0, the default profiles now include Gatekeeper posture on macOS, Secure Boot certificate inventory on Linux, targeted Windows process-open-handle telemetry, and improved npm package discovery. The process would take several minutes and result in an SBOM file with thousands of components of various types such as operating-system, device-drivers, files, and data.
+
+When `trustinspector` is available, live-host OBOM generation also enriches matching macOS and Windows components with code-signing / notarization / Authenticode properties and emits additional host-trust `data` components for Gatekeeper and WDAC posture. See [Trust enrichment BOM diff examples](./TRUST_ENRICHMENT_DIFF.md) for compact before/after excerpts.
+
+For macOS-specific setup and permission caveats, see [OBOM macOS troubleshooting](./OBOM_MACOS_TROUBLESHOOTING.md).
 
 For practical SOC/IR and compliance playbooks, see [OBOM lessons](./OBOM_LESSONS.md). For container hardening and breakout-focused binary reviews, see [Lesson 9](./LESSON9.md).
 
