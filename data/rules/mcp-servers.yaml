@@ -5,12 +5,13 @@
   category: mcp-server
   dry-run-support: full
   attack:
-    tactics: [TA0001, TA0004]
+    tactics: [TA0001, TA0002]
     techniques: [T1190, T1059]
   standards:
     owasp-ai-top-10:
       - "LLM07: Insecure Plugin Design"
       - "LLM08: Excessive Agency"
+      - "LLM06:2025 Excessive Agency"
     nist-ai-rmf:
       - "Map"
       - "Manage"
@@ -85,12 +86,13 @@
   category: mcp-server
   dry-run-support: full
   attack:
-    tactics: [TA0001, TA0005]
+    tactics: [TA0001]
     techniques: [T1195.001]
   standards:
     owasp-ai-top-10:
       - "LLM05: Supply Chain Vulnerabilities"
       - "LLM07: Insecure Plugin Design"
+      - "LLM03:2025 Supply Chain"
     nist-ai-rmf:
       - "Govern"
       - "Map"
@@ -135,6 +137,7 @@
     owasp-ai-top-10:
       - "LLM07: Insecure Plugin Design"
       - "LLM08: Excessive Agency"
+      - "LLM06:2025 Excessive Agency"
     nist-ai-rmf:
       - "Map"
       - "Manage"
@@ -175,6 +178,7 @@
     owasp-ai-top-10:
       - "LLM05: Supply Chain Vulnerabilities"
       - "LLM07: Insecure Plugin Design"
+      - "LLM03:2025 Supply Chain"
     nist-ai-rmf:
       - "Govern"
       - "Manage"
@@ -208,12 +212,13 @@
   category: mcp-server
   dry-run-support: full
   attack:
-    tactics: [TA0004]
+    tactics: [TA0006]
     techniques: [T1528]
   standards:
     owasp-ai-top-10:
       - "LLM07: Insecure Plugin Design"
       - "LLM08: Excessive Agency"
+      - "LLM06:2025 Excessive Agency"
     nist-ai-rmf:
       - "Govern"
       - "Map"
@@ -252,6 +257,7 @@
     owasp-ai-top-10:
       - "LLM07: Insecure Plugin Design"
       - "LLM08: Excessive Agency"
+      - "LLM06:2025 Excessive Agency"
     nist-ai-rmf:
       - "Govern"
       - "Manage"
@@ -287,6 +293,7 @@
     owasp-ai-top-10:
       - "LLM07: Insecure Plugin Design"
       - "LLM08: Excessive Agency"
+      - "LLM06:2025 Excessive Agency"
     nist-ai-rmf:
       - "Govern"
       - "Map"
