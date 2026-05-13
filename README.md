@@ -34,7 +34,7 @@ Supported output document formats:
 | Persona              | What cdxgen helps you do                                                               | First command                                                              | Read next                                                                                                 |
 | -------------------- | -------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
 | **Developers**       | Generate a CycloneDX BOM from a local repo, git URL, purl, or container image          | `cdxgen -o bom.json .`                                                     | [CLI Usage][docs-cli], [Supported Project Types][docs-project-types]                                      |
-| **Hardware teams**   | Generate an HBOM for the current host with hardware-aware enrichment                   | `hbom -o hbom.json`                                                        | [HBOM guide](docs/HBOM.md), [HBOM lesson](docs/LESSON13.md)                                               |
+| **Hardware teams**   | Generate an HBOM or merged HBOM+OBOM host view for the current host                    | `hbom -o hbom.json`                                                        | [HBOM guide](docs/HBOM.md), [HBOM lesson](docs/LESSON13.md)                                               |
 | **AppSec**           | Enrich BOMs with evidence, run BOM audit rules, and feed downstream security workflows | `cdxgen -o bom.json --profile appsec --evidence --bom-audit .`             | [BOM Audit](docs/BOM_AUDIT.md), [Threat Model](docs/THREAT_MODEL.md)                                      |
 | **SOC analysts**     | Build OBOM inventories for live hosts and triage runtime posture issues                | `obom -o obom.json --deep --bom-audit --bom-audit-categories obom-runtime` | [OBOM lessons](docs/OBOM_LESSONS.md), [Server Usage][docs-server]                                         |
 | **Compliance teams** | Validate BOM quality, check SCVS/CRA posture, and export SPDX deliverables             | `cdx-validate -i bom.json --benchmark scvs-l2,cra`                         | [cdx-validate](docs/CDX_VALIDATE.md), [cdx-convert](docs/CDX_CONVERT.md), [Permissions][docs-permissions] |
@@ -50,6 +50,9 @@ Supported output document formats:
 
 - Use `hbom` when you need a CycloneDX hardware inventory for the current host rather than a software dependency graph.
 - Start with the [HBOM guide](docs/HBOM.md) and the [HBOM lesson](docs/LESSON13.md) for supported platforms, enrichment options, and validation workflows.
+- Use `hbom --dry-run` first when you want a read-only partial HBOM plus an exact list of blocked hardware probe commands before a full collection run.
+- Use `hbom diagnostics` when you want a focused summary of missing native utilities and permission-denied enrichments before deciding whether to install host packages or rerun with `--privileged`.
+- Use `hbom --include-runtime` when you want one topology-aware CycloneDX host document that merges hardware inventory with runtime evidence using strict, non-guessing joins.
 
 #### For AppSec
 
@@ -97,6 +100,7 @@ Sections include:
 - [Getting Started][docs-homepage]
 - [CLI Usage][docs-cli]
 - [HBOM Guide](docs/HBOM.md)
+- [Merged Host View Lesson](docs/LESSON13.md)
 - [Server Usage][docs-server]
 - [Hands-on Lessons](docs/LESSON8.md)
 - [Container Escape & Privilege Lesson](docs/LESSON9.md)
@@ -142,6 +146,8 @@ Standalone GitHub release binaries are published for `cdxgen`, `cdxgen-slim`, `c
 
 `cdx-audit` is designed to accelerate upstream dependency review with explainable, evidence-backed risk prioritization. It complements provenance, reproducibility, and manual investigation rather than replacing them.
 
+For host inventories, `hbom --include-runtime` produces a merged HBOM + OBOM view with strict topology links such as interface-name, driver-module, storage/runtime, and explicit secure-boot trust matches, plus a `host-topology` BOM audit pack for higher-confidence host findings. When the live hardware collector reports missing utilities or permission-sensitive enrichments, use `hbom diagnostics` (or inspect the derived `cdx:hbom:analysis:*` summary properties) before deciding whether a rerun with `--privileged` is justified.
+
 To run cdxgen without installing (hotloading), use the [pnpm dlx](https://pnpm.io/cli/dlx) command.
 
 ```shell
@@ -157,6 +163,7 @@ corepack pnpm dlx --package=@cyclonedx/cdxgen cdx-validate --help
 corepack pnpm dlx --package=@cyclonedx/cdxgen cdx-sign --help
 corepack pnpm dlx --package=@cyclonedx/cdxgen cdx-verify --help
 corepack pnpm dlx --package=@cyclonedx/cdxgen hbom --help
+corepack pnpm dlx --package=@cyclonedx/cdxgen hbom diagnostics --help
 corepack pnpm dlx --package=@cyclonedx/cdxgen evinse --help
 corepack pnpm dlx --package=@cyclonedx/cdxgen cdxi --help
 ```
@@ -507,7 +514,7 @@ cdxgen can retain the dependency tree under the `dependencies` attribute for a s
 
 ## Plugins
 
-cdxgen could be extended with external binary plugins to support more SBOM use cases. These are now installed as an optional dependency.
+cdxgen could be extended with external binary plugins to support more SBOM use cases. These are installed as an optional dependency.
 
 ```shell
 sudo npm install -g @cdxgen/cdxgen-plugins-bin
@@ -516,7 +523,7 @@ sudo npm install -g @cdxgen/cdxgen-plugins-bin
 ## Plugins (pnpm)
 
 `cdxgen` can be extended with external binary plugins to support more SBOM use cases.  
-These are now installed as optional dependencies and can be used without a global install.
+These are installed as optional dependencies and can be used without a global install.
 
 ```shell
 pnpm dlx @cdxgen/cdxgen-plugins-bin
@@ -542,7 +549,7 @@ For offline or staged scans, point cdxgen at a locally reconstructed root filesy
 cdxgen /tmp/remote_target -o /tmp/bom.json -t rootfs
 ```
 
-With the packaged helpers installed, rootfs and container BOMs now gain repository trust-source components, deep keyring / CA-store `cryptographic-asset` components, native CycloneDX origin fields such as `supplier`, `manufacturer`, and `authors` for OS package trust metadata, plus additional package trust-state properties such as `PackageArchitecture`, `PackageSource`, and `PackageStatus`.
+With the packaged helpers installed, rootfs and container BOMs gain repository trust-source components, deep keyring / CA-store `cryptographic-asset` components, native CycloneDX origin fields such as `supplier`, `manufacturer`, and `authors` for OS package trust metadata, plus additional package trust-state properties such as `PackageArchitecture`, `PackageSource`, and `PackageStatus`.
 
 You can also pass the .tar file of a container image.
 

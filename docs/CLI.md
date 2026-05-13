@@ -24,15 +24,15 @@ The package ships multiple CLI entry points. Use this table as the top-level nav
 
 Some commands are focused aliases rather than separate implementations.
 
-| Alias                                | Equivalent behavior                                                                                        |
-| ------------------------------------ | ---------------------------------------------------------------------------------------------------------- |
-| `obom`                               | `cdxgen -t os`                                                                                             |
-| `hbom`                               | dedicated HBOM command backed by `@cdxgen/cdx-hbom`; equivalent library path: `cdxgen -t hbom`             |
-| `spdxgen`                            | `cdxgen --format spdx`                                                                                     |
-| `cbom`                               | `cdxgen` with `includeCrypto`, `evidence`, `deep`, and CycloneDX `1.7` defaults suited for CBOM generation |
-| `saasbom`                            | `cdxgen` with `evidence`, `deep`, and CycloneDX `1.7` defaults suited for service-evidence collection      |
-| `cdxgen-secure`                      | `cdxgen` with secure mode enabled and dependency installation disabled by default                          |
-| `cbom`, `obom`, `saasbom`, `spdxgen` | still accept the regular `cdxgen` flags in addition to their alias behavior                                |
+| Alias                                | Equivalent behavior                                                                                                         |
+| ------------------------------------ | --------------------------------------------------------------------------------------------------------------------------- |
+| `obom`                               | `cdxgen -t os`                                                                                                              |
+| `hbom`                               | dedicated HBOM command backed by `@cdxgen/cdx-hbom`; includes `hbom diagnostics`; equivalent library path: `cdxgen -t hbom` |
+| `spdxgen`                            | `cdxgen --format spdx`                                                                                                      |
+| `cbom`                               | `cdxgen` with `includeCrypto`, `evidence`, `deep`, and CycloneDX `1.7` defaults suited for CBOM generation                  |
+| `saasbom`                            | `cdxgen` with `evidence`, `deep`, and CycloneDX `1.7` defaults suited for service-evidence collection                       |
+| `cdxgen-secure`                      | `cdxgen` with secure mode enabled and dependency installation disabled by default                                           |
+| `cbom`, `obom`, `saasbom`, `spdxgen` | still accept the regular `cdxgen` flags in addition to their alias behavior                                                 |
 
 Installing `@cyclonedx/cdxgen` from npm exposes the commands in the command map plus the aliases in this section.
 
@@ -43,12 +43,16 @@ Use `hbom` when you want a hardware BOM for the current host rather than a softw
 - Supported collector targets currently come from `@cdxgen/cdx-hbom` (`darwin/arm64`, `linux/amd64`, and `linux/arm64`).
 - `hbom` dynamically loads the optional hardware collector only when you invoke the command or request `cdxgen -t hbom`.
 - Do not mix `hbom` with software project types in the same run. Generate SBOMs and HBOMs separately.
+- `--dry-run` for HBOM still returns a read-only partial BOM when safe local discovery is possible, while blocking collector commands and output writes.
+- Use `hbom diagnostics` when you want a fast summary of missing Linux utilities and permission-sensitive enrichments before deciding whether to install packages or rerun with `--privileged`.
 
 Examples:
 
 ```shell
 hbom -o hbom.json
 hbom -p
+hbom diagnostics
+hbom diagnostics --input hbom.json
 hbom --platform linux --arch amd64 --privileged -o linux-hbom.json
 cdxgen -t hbom -o hbom.json .
 ```
@@ -61,6 +65,7 @@ Use `--dry-run` when you want a read-only review of what cdxgen would attempt.
 - It blocks child-process execution, filesystem writes, temp-dir creation, repository cloning, protobuf export, signing, and remote submission.
 - At the end of the run, cdxgen prints an activity summary table that highlights what completed and what was intentionally blocked.
 - `--bom-audit` still runs the in-memory formulation audit in dry-run mode, but the predictive dependency audit only plans targets and skips registry metadata fetches, upstream repository cloning, and child SBOM generation.
+- HBOM dry-runs are more granular: the optional `@cdxgen/cdx-hbom` collector records the exact blocked hardware commands and can still return a partial hardware BOM from safe local discovery.
 
 Example:
 

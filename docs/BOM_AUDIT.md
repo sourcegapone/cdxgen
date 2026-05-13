@@ -23,6 +23,12 @@ cdxgen -t hbom -o hbom.json --bom-audit .
 # Audit only the security-focused HBOM rules
 cdxgen -t hbom -o hbom.json --bom-audit --bom-audit-categories hbom-security .
 
+# Generate and audit a merged HBOM + OBOM host view
+cdxgen -t hbom --include-runtime -o host-view.json --bom-audit .
+
+# Audit only the host-topology correlation rules
+cdxgen -t hbom --include-runtime -o host-view.json --bom-audit --bom-audit-categories host-topology .
+
 # Audit a previously generated HBOM with the full HBOM alias pack
 cdx-audit --bom hbom.json --direct-bom-audit --categories hbom
 
@@ -63,6 +69,7 @@ The categories that work best in dry-run mode are the formulation-centric ones:
 - `hbom-security`
 - `hbom-performance`
 - `hbom-compliance`
+- `host-topology`
 - `mcp-server`
 - `obom-runtime`
 - `vscode-extension`
@@ -143,6 +150,8 @@ Use the trusted-publishing switches to override the default:
 Passing both trusted switches together is invalid and causes cdxgen to exit with an error.
 
 HBOM-only runs are intentionally different: when `projectType` is `hbom`/`hardware` (or you use the dedicated `hbom` command), cdxgen skips the predictive dependency audit entirely and defaults the audit categories to `hbom-security,hbom-performance,hbom-compliance`.
+
+When you also pass `--include-runtime`, cdxgen keeps the same predictive-audit skip behavior but extends the default categories to `hbom-security,hbom-performance,hbom-compliance,host-topology`.
 
 ## Built-in rule categories
 
@@ -226,6 +235,20 @@ Notes for reviewers:
 - nested archives are surfaced as chained identities such as `outer.asar#/nested/core.asar#/src/main.js`
 - archive-internal paths are normalized to forward slashes, even when the outer archive lives on Windows
 - `cdx:asar:signingScope=header-only` means Electron signing evidence verifies the ASAR header hash scope, not all packed payload bytes
+
+### `host-topology` — Strict HBOM + OBOM host-view correlation
+
+Rules that only apply when a host BOM contains both hardware inventory and runtime inventory linked by explicit identifiers.
+
+| Rule    | Severity | Description                                                                                 |
+| ------- | -------- | ------------------------------------------------------------------------------------------- |
+| HMX-001 | medium   | A wired interface with live runtime address evidence is negotiated at degraded speed/duplex |
+| HMX-002 | high     | A wireless interface has live runtime address evidence while link security is weak          |
+| HMX-003 | medium   | A merged host view contains zero strict HBOM ↔ OBOM topology links                          |
+| HMX-004 | high     | A mounted storage device with explicit runtime evidence is reporting degraded health        |
+| HMX-005 | high     | An explicit HBOM Secure Boot trust anchor matches revoked runtime certificate evidence      |
+
+These rules are intentionally conservative. They rely on derived `cdx:hostview:*` properties produced only from exact, evidence-backed joins such as interface-name equality, driver-module equality, storage device-node or mount-path equality, logical-drive identifiers, and explicit Secure Boot certificate identifiers. They do **not** infer links from fuzzy naming similarity.
 
 ### `mcp-server` — MCP server exposure and trust posture
 
@@ -346,6 +369,8 @@ You can also use the alias `hbom` with `--bom-audit-categories` to enable the fu
 | HBS-002 | high     | Connected wireless adapter uses weak or missing link security  |
 | HBS-003 | high     | Removable storage is attached without encryption or lock proof |
 | HBS-004 | medium   | HBOM exposes raw hardware identifiers                          |
+| HBS-005 | high     | External expansion bus reports permissive security posture     |
+| HBS-006 | medium   | HBOM exposes raw cellular or subscriber identifiers            |
 
 Typical reviewer actions:
 
@@ -356,14 +381,17 @@ Typical reviewer actions:
 
 #### `hbom-performance` — Hardware capacity and degradation signals
 
-| Rule    | Severity | Description                                                    |
-| ------- | -------- | -------------------------------------------------------------- |
-| HBP-001 | medium   | Storage volume has low free capacity headroom                  |
-| HBP-002 | high     | Storage health is degraded or wear is near exhaustion          |
-| HBP-003 | high     | Thermal zone reports sustained high temperature                |
-| HBP-004 | medium   | Battery health is degraded                                     |
-| HBP-005 | medium   | Active wired link is operating below expected duplex/bandwidth |
-| HBP-006 | high     | Installed memory is only partially online                      |
+| Rule    | Severity | Description                                                     |
+| ------- | -------- | --------------------------------------------------------------- |
+| HBP-001 | medium   | Storage volume has low free capacity headroom                   |
+| HBP-002 | high     | Storage health is degraded or wear is near exhaustion           |
+| HBP-003 | high     | Thermal zone reports sustained high temperature                 |
+| HBP-004 | medium   | Battery health is degraded                                      |
+| HBP-005 | medium   | Active wired link is operating below expected duplex/bandwidth  |
+| HBP-006 | high     | Installed memory is only partially online                       |
+| HBP-007 | medium   | Battery design capacity has materially degraded                 |
+| HBP-008 | medium   | USB device requires more current than the bus reports available |
+| HBP-009 | medium   | Cellular modem reports weak signal quality                      |
 
 Typical reviewer actions:
 
@@ -375,13 +403,18 @@ Typical reviewer actions:
 
 #### `hbom-compliance` — Governance and evidence completeness
 
-| Rule    | Severity | Description                                         |
-| ------- | -------- | --------------------------------------------------- |
-| HBC-001 | medium   | HBOM inventory lacks firmware or board provenance   |
-| HBC-002 | medium   | Managed asset identity is incomplete                |
-| HBC-003 | medium   | HBOM collector evidence is incomplete               |
-| HBC-004 | medium   | Storage inventory lacks encryption posture evidence |
-| HBC-005 | medium   | HBOM uses non-redacted identifier policy            |
+| Rule    | Severity | Description                                               |
+| ------- | -------- | --------------------------------------------------------- |
+| HBC-001 | medium   | HBOM inventory lacks firmware or board provenance         |
+| HBC-002 | medium   | Managed asset identity is incomplete                      |
+| HBC-003 | medium   | HBOM collector evidence is incomplete                     |
+| HBC-004 | medium   | Storage inventory lacks encryption posture evidence       |
+| HBC-005 | medium   | HBOM uses non-redacted identifier policy                  |
+| HBC-006 | medium   | HBOM collector is missing optional enrichment commands    |
+| HBC-007 | medium   | HBOM collector hit permission-denied enrichments          |
+| HBC-008 | medium   | HBOM collector is missing firmware-management enrichment  |
+| HBC-009 | medium   | HBOM board and BIOS provenance was blocked by permissions |
+| HBC-010 | medium   | HBOM display and DRM evidence is incomplete               |
 
 These rules are mapped where practical to common governance references such as:
 
@@ -395,6 +428,10 @@ Typical reviewer actions:
 - preserve collector command evidence so the inventory is reproducible during audit or incident review
 - capture explicit storage encryption posture for governed devices
 - prefer redacted identifier policy for broadly shared BOMs
+- use `hbom diagnostics` or the derived `cdx:hbom:analysis:*` summary properties to identify missing host packages before accepting a partial Linux HBOM
+- rerun with `--privileged` only when the diagnostic evidence shows permission-denied enrichments that are worth collecting and your target environment allows non-interactive sudo
+- install `fwupdmgr`, `edid-decode`, or other reported native helpers when you need the richer firmware-management or display evidence introduced by newer HBOM collectors
+- use `cdxi` pivots such as `.hbomdiagnostics`, `.hbomfirmware`, `.hbombuses`, and `.hbompower` when you want to inspect the exact hardware surfaces behind the findings
 
 ### `rootfs-hardening` — Offline host and golden-image hardening review
 
