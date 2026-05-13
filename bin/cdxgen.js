@@ -38,6 +38,12 @@ import {
   createOutputPlan,
   getOutputDirectory,
 } from "../lib/helpers/exportUtils.js";
+import {
+  ensureNoMixedHbomProjectTypes,
+  ensureSupportedHbomSpecVersion,
+  hasHbomProjectType,
+  isHbomOnlyProjectTypes,
+} from "../lib/helpers/hbom.js";
 import { TRACE_MODE, thoughtEnd, thoughtLog } from "../lib/helpers/logger.js";
 import {
   cleanupSourceDir,
@@ -561,6 +567,7 @@ const args = _yargs
       "$0 -t java -t js .",
       "Generate a SBOM for Java and JavaScript in the current directory",
     ],
+    ["$0 -t hbom .", "Generate an HBOM for the current host"],
     [
       "$0 -t java --profile ml .",
       "Generate a Java SBOM for machine learning purposes.",
@@ -704,6 +711,15 @@ for (const outputFile of Object.values(outputPlan.outputs)) {
 if (options.projectType && Array.isArray(options.projectType)) {
   options.projectType = Array.from(new Set(options.projectType));
 }
+try {
+  ensureNoMixedHbomProjectTypes(options.projectType);
+  if (hasHbomProjectType(options.projectType)) {
+    ensureSupportedHbomSpecVersion(options.specVersion);
+  }
+} catch (error) {
+  console.error(error.message);
+  process.exit(1);
+}
 if (!options.projectType) {
   thoughtLog(
     "Ok, the user wants me to identify all the project types and generate a consolidated BOM document.",
@@ -749,7 +765,16 @@ if (isDryRun) {
 if (options.standard) {
   options.specVersion = 1.7;
 }
-if (options.includeFormulation) {
+const isHbomOnlyInvocation = isHbomOnlyProjectTypes(options.projectType);
+if (options.includeFormulation && isHbomOnlyInvocation) {
+  thoughtLog(
+    "HBOM-only invocations do not benefit from formulation data. Let's ignore this option to keep the resulting document focused on hardware inventory.",
+  );
+  console.log(
+    "NOTE: Ignoring formulation collection for HBOM-only invocations because the resulting hardware BOM does not need workflow or dependency-tree enrichment.",
+  );
+  options.includeFormulation = false;
+} else if (options.includeFormulation) {
   if (options.serverUrl) {
     thoughtLog(
       "Wait, the user specified a server URL and wants to include formulation data. Let's warn about accidentally disclosing sensitive data to a remote server.",
@@ -903,12 +928,16 @@ const applyAdvancedOptions = (options) => {
     );
   }
   if (options.bomAudit) {
-    if (!options.includeFormulation) {
+    if (isHbomOnlyInvocation) {
+      thoughtLog(
+        "HBOM-only bom-audit runs should stay focused on hardware inventory. Skipping automatic formulation collection.",
+      );
+    } else if (!options.includeFormulation) {
       console.log(
         "NOTE: Automatically collecting formulation information. The section may include sensitive data such as emails and secrets.\nPlease review the generated SBOM before distribution or LLM training.\n",
       );
+      options.includeFormulation = true;
     }
-    options.includeFormulation = true;
   }
   return options;
 };
@@ -1386,7 +1415,9 @@ const writeCycloneDxOutput = (jsonFile, bomJson, options) => {
     cleanup = true;
   }
   setActivityContext({ sourcePath: srcDir });
-  prepareEnv(srcDir, options);
+  if (!hasHbomProjectType(options.projectType)) {
+    prepareEnv(srcDir, options);
+  }
   thoughtLog("Getting ready to generate the BOM ⚡️.");
   const originalFetchPackageMetadata = process.env.CDXGEN_FETCH_PKG_METADATA;
   const shouldRunPredictiveAudit = shouldRunPredictiveBomAudit(
