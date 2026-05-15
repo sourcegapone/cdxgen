@@ -31,19 +31,19 @@ That means new tests should normally live next to the source module they exercis
 
 ## Running tests
 
-| Goal | Command |
-|---|---|
-| run the full suite | `pnpm test` |
-| run in watch mode | `pnpm run watch` |
+| Goal                       | Command                          |
+| -------------------------- | -------------------------------- |
+| run the full suite         | `pnpm test`                      |
+| run in watch mode          | `pnpm run watch`                 |
 | run a single file directly | `node lib/helpers/utils.poku.js` |
 
 ## The three most common test shapes
 
-| Test shape | Best for |
-|---|---|
-| pure parser test | lockfile and manifest parsing with no external process execution |
-| mocked integration test | generator paths that shell out or call network helpers |
-| behavior-focused unit test | utility modules, formatters, validators, and small helpers |
+| Test shape                 | Best for                                                         |
+| -------------------------- | ---------------------------------------------------------------- |
+| pure parser test           | lockfile and manifest parsing with no external process execution |
+| mocked integration test    | generator paths that shell out or call network helpers           |
+| behavior-focused unit test | utility modules, formatters, validators, and small helpers       |
 
 ## Basic anatomy of a poku test
 
@@ -70,11 +70,11 @@ Fixtures live under `test/`. They should be realistic enough to catch regression
 
 ### Fixture selection guide
 
-| Use this kind of fixture | When you want to validate |
-|---|---|
-| happy-path real file | the normal parser path |
-| small crafted edge case | unusual syntax, aliases, or optional sections |
-| missing-file case | graceful empty-array or soft-failure behavior |
+| Use this kind of fixture | When you want to validate                     |
+| ------------------------ | --------------------------------------------- |
+| happy-path real file     | the normal parser path                        |
+| small crafted edge case  | unusual syntax, aliases, or optional sections |
+| missing-file case        | graceful empty-array or soft-failure behavior |
 
 ### ASCII fixture flow
 
@@ -122,7 +122,9 @@ import { assert, describe, it } from "poku";
 
 describe("createJavaBom()", () => {
   it("handles a failed spawn gracefully", async () => {
-    const spawnStub = sinon.stub().returns({ stdout: "", stderr: "error", status: 1 });
+    const spawnStub = sinon
+      .stub()
+      .returns({ stdout: "", stderr: "error", status: 1 });
 
     const { createJavaBom } = await esmock("../cli/index.js", {
       "../helpers/utils.js": {
@@ -150,10 +152,10 @@ flowchart TD
 
 `sinon` is the standard companion library for stubs, spies, and restores.
 
-| Tool | Use it when |
-|---|---|
-| `sinon.stub()` | you want to replace behavior completely |
-| `sinon.spy()` | you want to observe calls to a real function |
+| Tool              | Use it when                                           |
+| ----------------- | ----------------------------------------------------- |
+| `sinon.stub()`    | you want to replace behavior completely               |
+| `sinon.spy()`     | you want to observe calls to a real function          |
 | `sinon.restore()` | you want to clean up all stubs and spies after a test |
 
 If several tests in a block create stubs, restore them in `afterEach()`.
@@ -162,12 +164,12 @@ If several tests in a block create stubs, restore them in `afterEach()`.
 
 When a test exercises a generator rather than a raw parser, prefer asserting on stable outcomes rather than fragile full-object snapshots.
 
-| Stable assertion | Why it ages well |
-|---|---|
-| `components.length` | robust against unrelated metadata churn |
-| specific component names or purls | proves the core parse worked |
-| specific dependency edges | proves graph construction worked |
-| presence of `parentComponent` | proves top-level identity handling worked |
+| Stable assertion                  | Why it ages well                          |
+| --------------------------------- | ----------------------------------------- |
+| `components.length`               | robust against unrelated metadata churn   |
+| specific component names or purls | proves the core parse worked              |
+| specific dependency edges         | proves graph construction worked          |
+| presence of `parentComponent`     | proves top-level identity handling worked |
 
 Avoid asserting on fields that are likely to change for unrelated reasons unless the test is specifically about those fields.
 
@@ -175,12 +177,12 @@ Avoid asserting on fields that are likely to change for unrelated reasons unless
 
 cdxgen CI runs tests on Linux, macOS, and Windows. Keep that in mind when assertions involve:
 
-| Concern | Better pattern |
-|---|---|
-| file paths | `path.join`, `path.normalize`, separator-agnostic checks |
-| executable names | assert on the program name, not the absolute path |
-| temporary directories | avoid `/tmp` assumptions in expected values |
-| line endings | compare normalised strings when necessary |
+| Concern               | Better pattern                                           |
+| --------------------- | -------------------------------------------------------- |
+| file paths            | `path.join`, `path.normalize`, separator-agnostic checks |
+| executable names      | assert on the program name, not the absolute path        |
+| temporary directories | avoid `/tmp` assumptions in expected values              |
+| line endings          | compare normalised strings when necessary                |
 
 ## A good testing order for feature work
 
@@ -193,12 +195,12 @@ If you are adding a feature, this order keeps the feedback loop fast.
 
 ## Common mistakes
 
-| Mistake | Better approach |
-|---|---|
-| running the real package manager in unit tests | stub `safeSpawnSync` |
-| using deeply brittle whole-object assertions | assert on the meaningful subset |
-| forgetting cleanup | call `sinon.restore()` or use `afterEach()` |
-| hardcoding POSIX paths | use `node:path` helpers |
+| Mistake                                        | Better approach                             |
+| ---------------------------------------------- | ------------------------------------------- |
+| running the real package manager in unit tests | stub `safeSpawnSync`                        |
+| using deeply brittle whole-object assertions   | assert on the meaningful subset             |
+| forgetting cleanup                             | call `sinon.restore()` or use `afterEach()` |
+| hardcoding POSIX paths                         | use `node:path` helpers                     |
 
 ## Related pages
 

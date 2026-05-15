@@ -28,12 +28,12 @@ bin/cdxgen.js
 
 ### What is specific here
 
-| Stage | Java-specific behavior |
-|---|---|
-| detection | `createXBom()` looks for `pom.xml`, `build.gradle*`, and `build.sbt`-style JVM signals |
-| assembly | `createJavaBom()` can switch between CycloneDX Maven plugin and dependency-tree collection |
-| deep mode | namespace mapping and class-resolution helpers may run |
-| post-processing | standard filtering, formulation, metadata, and annotations still happen exactly once |
+| Stage           | Java-specific behavior                                                                     |
+| --------------- | ------------------------------------------------------------------------------------------ |
+| detection       | `createXBom()` looks for `pom.xml`, `build.gradle*`, and `build.sbt`-style JVM signals     |
+| assembly        | `createJavaBom()` can switch between CycloneDX Maven plugin and dependency-tree collection |
+| deep mode       | namespace mapping and class-resolution helpers may run                                     |
+| post-processing | standard filtering, formulation, metadata, and annotations still happen exactly once       |
 
 ### Common failure shape
 
@@ -64,12 +64,12 @@ flowchart TD
 
 ### What is specific here
 
-| Stage | JavaScript-specific behavior |
-|---|---|
-| detection | `createXBom()` quickly recognizes `package.json`, `rush.json`, and `yarn.lock` |
-| source analysis | Babel-based import/export analysis can run before manifest assembly |
+| Stage            | JavaScript-specific behavior                                                      |
+| ---------------- | --------------------------------------------------------------------------------- |
+| detection        | `createXBom()` quickly recognizes `package.json`, `rush.json`, and `yarn.lock`    |
+| source analysis  | Babel-based import/export analysis can run before manifest assembly               |
 | package assembly | lockfiles, bower manifests, and minified JS parsing can all contribute components |
-| guarded installs | install-time recovery keeps `--ignore-scripts` enabled |
+| guarded installs | install-time recovery keeps `--ignore-scripts` enabled                            |
 
 ## Example 3: Python project with lockfiles
 
@@ -98,12 +98,12 @@ createBom()
 
 ### What is specific here
 
-| Stage | Python-specific behavior |
-|---|---|
-| detection | `createXBom()` checks multiple Python packaging front doors |
-| parent metadata | `pyproject.toml` may define the top-level component directly |
-| safe fallback | export-based flows can be used instead of live environment installation |
-| formulation | Python can contribute formulation data that is attached before the once-per-BOM post-process step |
+| Stage           | Python-specific behavior                                                                          |
+| --------------- | ------------------------------------------------------------------------------------------------- |
+| detection       | `createXBom()` checks multiple Python packaging front doors                                       |
+| parent metadata | `pyproject.toml` may define the top-level component directly                                      |
+| safe fallback   | export-based flows can be used instead of live environment installation                           |
+| formulation     | Python can contribute formulation data that is attached before the once-per-BOM post-process step |
 
 ## Example 4: .NET project requiring restore
 
@@ -130,12 +130,12 @@ flowchart TD
 
 ### What is specific here
 
-| Stage | .NET-specific behavior |
-|---|---|
-| detection | `createXBom()` recognizes solution and project files as well as assets and lockfiles |
-| restore | `createCsharpBom()` decides between `dotnet`, `nuget`, and `msbuild` restore paths |
-| diagnostics | restore failures often include targeted guidance about SDK versions, private feeds, and platform limits |
-| package assembly | restored assets and package files both contribute to final dependency shape |
+| Stage            | .NET-specific behavior                                                                                  |
+| ---------------- | ------------------------------------------------------------------------------------------------------- |
+| detection        | `createXBom()` recognizes solution and project files as well as assets and lockfiles                    |
+| restore          | `createCsharpBom()` decides between `dotnet`, `nuget`, and `msbuild` restore paths                      |
+| diagnostics      | restore failures often include targeted guidance about SDK versions, private feeds, and platform limits |
+| package assembly | restored assets and package files both contribute to final dependency shape                             |
 
 ## Example 5: Multi-type repository
 
@@ -166,12 +166,12 @@ This is why formulation, standards shaping, and final filtering belong in `postP
 
 The generation pipeline is often followed by additional actions.
 
-| Feature | What happens after generation |
-|---|---|
-| `--bom-audit` | evaluates the BOM against direct rule packs and, when applicable, predictive dependency targets |
-| `--validate` | validates the generated BOM before optional export or submission |
-| SPDX output | converts the BOM after the CycloneDX path is assembled |
-| `submitBom()` usage | uploads the generated document to a downstream system |
+| Feature             | What happens after generation                                                                   |
+| ------------------- | ----------------------------------------------------------------------------------------------- |
+| `--bom-audit`       | evaluates the BOM against direct rule packs and, when applicable, predictive dependency targets |
+| `--validate`        | validates the generated BOM before optional export or submission                                |
+| SPDX output         | converts the BOM after the CycloneDX path is assembled                                          |
+| `submitBom()` usage | uploads the generated document to a downstream system                                           |
 
 These are adjacent to the generation pipeline, but they are still easiest to understand once you know where `createBom()` ends and post-processing begins.
 

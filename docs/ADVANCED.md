@@ -700,13 +700,13 @@ flowchart TD
 
 ## Fast recommendations by scenario
 
-| Scenario | Recommended image |
-|---|---|
-| you want the least thinking and broadest compatibility | `ghcr.io/cyclonedx/cdxgen:master` |
-| you want Node.js permission restrictions by default | `ghcr.io/cyclonedx/cdxgen-secure:master` |
-| you prefer Deno runtime and permissions | `ghcr.io/cyclonedx/cdxgen-deno:master` |
-| you need an exact Java, .NET, Python, Ruby, Go, or Swift runtime | the matching language-specific image from the table below |
-| you care a lot about image size | an Alpine variant if the ecosystem and native dependencies tolerate it |
+| Scenario                                                         | Recommended image                                                      |
+| ---------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| you want the least thinking and broadest compatibility           | `ghcr.io/cyclonedx/cdxgen:master`                                      |
+| you want Node.js permission restrictions by default              | `ghcr.io/cyclonedx/cdxgen-secure:master`                               |
+| you prefer Deno runtime and permissions                          | `ghcr.io/cyclonedx/cdxgen-deno:master`                                 |
+| you need an exact Java, .NET, Python, Ruby, Go, or Swift runtime | the matching language-specific image from the table below              |
+| you care a lot about image size                                  | an Alpine variant if the ecosystem and native dependencies tolerate it |
 
 ## How to think about the major image families
 
@@ -714,10 +714,10 @@ flowchart TD
 
 These are the best starting point for most teams. They trade image size for convenience and broad tool coverage.
 
-| Image | Best for |
-|---|---|
-| `ghcr.io/cyclonedx/cdxgen:master` | general use, local experimentation, broad CI coverage |
-| `ghcr.io/cyclonedx/cdxgen-deno:master` | users who want Deno runtime behavior |
+| Image                                    | Best for                                              |
+| ---------------------------------------- | ----------------------------------------------------- |
+| `ghcr.io/cyclonedx/cdxgen:master`        | general use, local experimentation, broad CI coverage |
+| `ghcr.io/cyclonedx/cdxgen-deno:master`   | users who want Deno runtime behavior                  |
 | `ghcr.io/cyclonedx/cdxgen-secure:master` | environments that prefer stricter runtime permissions |
 
 ### 2. Language-specific images

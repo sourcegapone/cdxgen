@@ -49,12 +49,12 @@ flowchart TD
 
 Start by answering these questions.
 
-| Question | Why it matters |
-|---|---|
-| Is the ecosystem already supported under a different alias? | avoids duplicate project types |
-| Does a lockfile already contain everything needed? | determines whether you need package-manager execution |
-| Does the ecosystem require a native tool or SDK? | affects containers, CI, and secure-mode expectations |
-| Does the output need custom purl behavior? | affects package identity and deduplication |
+| Question                                                    | Why it matters                                        |
+| ----------------------------------------------------------- | ----------------------------------------------------- |
+| Is the ecosystem already supported under a different alias? | avoids duplicate project types                        |
+| Does a lockfile already contain everything needed?          | determines whether you need package-manager execution |
+| Does the ecosystem require a native tool or SDK?            | affects containers, CI, and secure-mode expectations  |
+| Does the output need custom purl behavior?                  | affects package identity and deduplication            |
 
 The first place to check is `lib/helpers/utils.js`, especially `PROJECT_TYPE_ALIASES`.
 
@@ -98,12 +98,12 @@ flowchart TD
 
 When you create parser functions, keep these conventions:
 
-| Convention | Reason |
-|---|---|
-| return arrays, usually empty arrays on missing files | callers expect non-throwing parser behavior |
-| use `PackageURL` for purls | string concatenation is fragile and discouraged |
-| use `safeExistsSync` and `safeSpawnSync` | keeps secure-mode and command-allowlist behavior consistent |
-| accept `options` when behavior depends on CLI flags | keeps library code detached from `process.argv` |
+| Convention                                           | Reason                                                      |
+| ---------------------------------------------------- | ----------------------------------------------------------- |
+| return arrays, usually empty arrays on missing files | callers expect non-throwing parser behavior                 |
+| use `PackageURL` for purls                           | string concatenation is fragile and discouraged             |
+| use `safeExistsSync` and `safeSpawnSync`             | keeps secure-mode and command-allowlist behavior consistent |
+| accept `options` when behavior depends on CLI flags  | keeps library code detached from `process.argv`             |
 
 ## Step 3: Build package objects that fit the rest of cdxgen
 
@@ -111,15 +111,15 @@ Your parser does not need to assemble a full CycloneDX document. It does need to
 
 A typical component-like package record contains:
 
-| Field | Typical purpose |
-|---|---|
-| `name` | package name |
-| `version` | resolved version |
-| `purl` | stable package identity |
-| `bom-ref` | component reference, often aligned with the purl |
-| `type` | usually `library`, sometimes `framework`, `application`, or another valid CycloneDX type |
-| `scope` | often `required` for direct dependencies |
-| `properties` | extra source context such as manifest path |
+| Field        | Typical purpose                                                                          |
+| ------------ | ---------------------------------------------------------------------------------------- |
+| `name`       | package name                                                                             |
+| `version`    | resolved version                                                                         |
+| `purl`       | stable package identity                                                                  |
+| `bom-ref`    | component reference, often aligned with the purl                                         |
+| `type`       | usually `library`, sometimes `framework`, `application`, or another valid CycloneDX type |
+| `scope`      | often `required` for direct dependencies                                                 |
+| `properties` | extra source context such as manifest path                                               |
 
 If the ecosystem has lockfile-only data with no dependency tree, start there. cdxgen already has several ecosystems where the initial implementation is manifest-first and a later contribution deepens it.
 
@@ -178,12 +178,12 @@ createXBom() or createMultiXBom()
 
 Not every ecosystem needs custom dependency-edge handling, but some do. Use existing implementations as examples.
 
-| Situation | What to do |
-|---|---|
-| the ecosystem can provide a full dependency graph | populate `dependencies` and pass it into `buildBomNSData()` |
-| the ecosystem only provides a flat list | start with components only and add graph support later |
-| the scan produces a top-level application component | populate `parentComponent` appropriately |
-| the ecosystem contributes formulation-only data | attach it to the BOM result so post-processing can add it once |
+| Situation                                           | What to do                                                     |
+| --------------------------------------------------- | -------------------------------------------------------------- |
+| the ecosystem can provide a full dependency graph   | populate `dependencies` and pass it into `buildBomNSData()`    |
+| the ecosystem only provides a flat list             | start with components only and add graph support later         |
+| the scan produces a top-level application component | populate `parentComponent` appropriately                       |
+| the ecosystem contributes formulation-only data     | attach it to the BOM result so post-processing can add it once |
 
 ## Step 7: Add real fixtures under `test/`
 
@@ -191,11 +191,11 @@ Good ecosystem support starts with honest fixture files. Add representative mani
 
 Choose fixtures that cover:
 
-| Fixture type | Why it helps |
-|---|---|
-| normal project | confirms the happy path |
-| small edge case | captures the format quirk that motivated the feature |
-| missing or minimal file | proves the parser fails gently |
+| Fixture type            | Why it helps                                         |
+| ----------------------- | ---------------------------------------------------- |
+| normal project          | confirms the happy path                              |
+| small edge case         | captures the format quirk that motivated the feature |
+| missing or minimal file | proves the parser fails gently                       |
 
 ## Step 8: Write poku tests close to the code
 
@@ -212,11 +212,11 @@ If the generator shells out, stub `safeSpawnSync` with `esmock` and `sinon` rath
 
 At minimum, update `docs/PROJECT_TYPES.md` so users know:
 
-| Detail to add | Example |
-|---|---|
-| canonical type | `mylang` |
-| accepted aliases | `mypkgmanager`, `myalias` |
-| discovery files | `mylang.lock`, `mylang.toml` |
+| Detail to add       | Example                                |
+| ------------------- | -------------------------------------- |
+| canonical type      | `mylang`                               |
+| accepted aliases    | `mypkgmanager`, `myalias`              |
+| discovery files     | `mylang.lock`, `mylang.toml`           |
 | notable limitations | lockfile only, no transitive graph yet |
 
 ## Step 10: Consider CI and container support
@@ -225,12 +225,12 @@ Some ecosystems are easy to merge because the parser is pure JavaScript. Others 
 
 Use this checklist.
 
-| Follow-up area | Ask yourself |
-|---|---|
-| repotests | is there a stable public repository worth adding to `.github/workflows/repotests.yml`? |
-| container images | does the default image already include the SDK or toolchain? |
-| secure mode | does your implementation degrade safely when process execution is restricted? |
-| docs | will users understand limitations and prerequisites from the docs alone? |
+| Follow-up area   | Ask yourself                                                                           |
+| ---------------- | -------------------------------------------------------------------------------------- |
+| repotests        | is there a stable public repository worth adding to `.github/workflows/repotests.yml`? |
+| container images | does the default image already include the SDK or toolchain?                           |
+| secure mode      | does your implementation degrade safely when process execution is restricted?          |
+| docs             | will users understand limitations and prerequisites from the docs alone?               |
 
 ## A practical order that keeps the PR reviewable
 
@@ -246,13 +246,13 @@ That order lets reviewers trust each layer before they look at the next one.
 
 ## Common mistakes to avoid
 
-| Mistake | Why it hurts |
-|---|---|
-| reading `process.argv` in a parser | breaks the `options` contract |
-| constructing purls by hand | creates inconsistent refs and parsing errors |
-| putting once-per-BOM logic in `buildBomNSData()` | repeats the effect for every project type |
-| importing `lib/cli/index.js` from a helper or stage | breaks layering rules |
-| omitting fixtures | makes parser regressions hard to catch |
+| Mistake                                             | Why it hurts                                 |
+| --------------------------------------------------- | -------------------------------------------- |
+| reading `process.argv` in a parser                  | breaks the `options` contract                |
+| constructing purls by hand                          | creates inconsistent refs and parsing errors |
+| putting once-per-BOM logic in `buildBomNSData()`    | repeats the effect for every project type    |
+| importing `lib/cli/index.js` from a helper or stage | breaks layering rules                        |
+| omitting fixtures                                   | makes parser regressions hard to catch       |
 
 ## Final checklist
 

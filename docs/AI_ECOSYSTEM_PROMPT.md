@@ -8,15 +8,15 @@ A good prompt should make the agent produce a small, reviewable change that foll
 
 ## What the prompt should include
 
-| Include this | Why it matters |
-|---|---|
-| the canonical ecosystem name and any aliases | the agent needs to update `PROJECT_TYPE_ALIASES` and related dispatch code correctly |
-| the manifests and lockfiles to detect | helps the agent place parser and discovery logic in the right files |
-| whether a native toolchain is required | affects `safeSpawnSync`, container images, secure mode, and CI expectations |
-| whether a dependency graph is available | tells the agent whether to wire `dependencies` immediately or start with a flat package list |
-| expected purl type and notable qualifiers | avoids incorrect hand-built purls |
-| representative real fixtures | keeps the change grounded and testable |
-| user-facing limits or prerequisites | ensures docs are honest from the first PR |
+| Include this                                 | Why it matters                                                                               |
+| -------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| the canonical ecosystem name and any aliases | the agent needs to update `PROJECT_TYPE_ALIASES` and related dispatch code correctly         |
+| the manifests and lockfiles to detect        | helps the agent place parser and discovery logic in the right files                          |
+| whether a native toolchain is required       | affects `safeSpawnSync`, container images, secure mode, and CI expectations                  |
+| whether a dependency graph is available      | tells the agent whether to wire `dependencies` immediately or start with a flat package list |
+| expected purl type and notable qualifiers    | avoids incorrect hand-built purls                                                            |
+| representative real fixtures                 | keeps the change grounded and testable                                                       |
+| user-facing limits or prerequisites          | ensures docs are honest from the first PR                                                    |
 
 ## Prompt template
 

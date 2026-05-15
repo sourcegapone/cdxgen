@@ -83,13 +83,13 @@ sequenceDiagram
 
 The CLI accepts more than one style of input.
 
-| Input style | What cdxgen does first |
-|---|---|
-| local source directory | prepares SDKs and scans for manifests |
-| container image reference | exports the image before dependency extraction |
+| Input style                           | What cdxgen does first                                      |
+| ------------------------------------- | ----------------------------------------------------------- |
+| local source directory                | prepares SDKs and scans for manifests                       |
+| container image reference             | exports the image before dependency extraction              |
 | container archive (`.tar`, `.tar.gz`) | explodes the archive into layers and treats it as OCI input |
-| purl source reference | resolves it to a source repository first |
-| HBOM-oriented mode | routes to the dedicated hardware collector path |
+| purl source reference                 | resolves it to a source repository first                    |
+| HBOM-oriented mode                    | routes to the dedicated hardware collector path             |
 
 In standard CLI usage, `bin/cdxgen.js` calls `prepareEnv(srcDir, options)` before `createBom()`. `prepareEnv()` is synchronous and may install or configure required tools for Python, Node.js, Swift, Ruby, or SDKMAN-managed Java versions.
 
@@ -122,25 +122,25 @@ Container mode is important because it short-circuits several source-project ass
 
 For project directories, `createXBom()` detects ecosystems by looking for known manifests and lock files.
 
-| Ecosystem family | Typical detection files |
-|---|---|
-| Node.js | `package.json`, `rush.json`, `yarn.lock` |
-| Java and JVM | `pom.xml`, `build.gradle*`, `build.sbt`, `build.mill` |
-| Python | `pyproject.toml`, `poetry.lock`, `Pipfile`, `requirements*.txt`, `*.whl` |
-| Go | `go.mod`, `go.sum`, `Gopkg.lock` |
-| Rust | `Cargo.toml`, `Cargo.lock` |
-| .NET | `*.sln`, `*.csproj`, `project.assets.json`, `packages.lock.json`, `paket.lock` |
-| PHP | `composer.json`, `composer.lock` |
+| Ecosystem family | Typical detection files                                                        |
+| ---------------- | ------------------------------------------------------------------------------ |
+| Node.js          | `package.json`, `rush.json`, `yarn.lock`                                       |
+| Java and JVM     | `pom.xml`, `build.gradle*`, `build.sbt`, `build.mill`                          |
+| Python           | `pyproject.toml`, `poetry.lock`, `Pipfile`, `requirements*.txt`, `*.whl`       |
+| Go               | `go.mod`, `go.sum`, `Gopkg.lock`                                               |
+| Rust             | `Cargo.toml`, `Cargo.lock`                                                     |
+| .NET             | `*.sln`, `*.csproj`, `project.assets.json`, `packages.lock.json`, `paket.lock` |
+| PHP              | `composer.json`, `composer.lock`                                               |
 
 Filtering options affect discovery before generation starts:
 
-| Option | Effect |
-|---|---|
-| `-t` / `--type` | narrows generation to selected project types |
-| `--exclude-type` | prevents matching types from running |
-| `--include-regex` | narrows manifest search to matching paths |
-| `--exclude` | removes paths from discovery |
-| recursion controls | change how broadly the tree is searched |
+| Option             | Effect                                       |
+| ------------------ | -------------------------------------------- |
+| `-t` / `--type`    | narrows generation to selected project types |
+| `--exclude-type`   | prevents matching types from running         |
+| `--include-regex`  | narrows manifest search to matching paths    |
+| `--exclude`        | removes paths from discovery                 |
+| recursion controls | change how broadly the tree is searched      |
 
 ## Step 4: Per-language BOM assembly
 
@@ -194,31 +194,31 @@ After `createBom()` returns, the CLI calls `postProcess(bomNSData, options, srcD
 
 This is where cdxgen performs its once-per-BOM work in a fixed order:
 
-| Order | Function | Purpose |
-|---|---|---|
-| 1 | `filterBom()` | applies include, exclude, confidence, required-only, and related filters |
-| 2 | `applyStandards()` | merges standards templates into the BOM when `--standard` is used |
-| 3 | `applyMetadata()` | rewrites source-file evidence to relative paths and adds summary metadata properties |
-| 4 | `applyContainerInventoryMetadata()` | adds container unpackaged-file summary counts where relevant |
-| 5 | `applyFormulation()` | adds formulation data such as build tools and git context |
-| 6 | `applyReleaseNotes()` | computes release notes when enabled |
-| 7 | `applySpecVersionCompatibility()` | downgrades newer fields when emitting older CycloneDX spec versions |
-| 8 | `validateTlpClassification()` | enforces TLP-related metadata rules |
-| 9 | `annotate()` | adds annotations when the spec version supports them |
+| Order | Function                            | Purpose                                                                              |
+| ----- | ----------------------------------- | ------------------------------------------------------------------------------------ |
+| 1     | `filterBom()`                       | applies include, exclude, confidence, required-only, and related filters             |
+| 2     | `applyStandards()`                  | merges standards templates into the BOM when `--standard` is used                    |
+| 3     | `applyMetadata()`                   | rewrites source-file evidence to relative paths and adds summary metadata properties |
+| 4     | `applyContainerInventoryMetadata()` | adds container unpackaged-file summary counts where relevant                         |
+| 5     | `applyFormulation()`                | adds formulation data such as build tools and git context                            |
+| 6     | `applyReleaseNotes()`               | computes release notes when enabled                                                  |
+| 7     | `applySpecVersionCompatibility()`   | downgrades newer fields when emitting older CycloneDX spec versions                  |
+| 8     | `validateTlpClassification()`       | enforces TLP-related metadata rules                                                  |
+| 9     | `annotate()`                        | adds annotations when the spec version supports them                                 |
 
 ### What each post-process step really does
 
-| Function | Implementation detail from the current code |
-|---|---|
-| `filterBom()` | removes excluded inventory types, filters on confidence/technique/purl/property matches, rebuilds retained `dependencies[]`, and can emit incomplete `compositions[]` for filtered outputs |
-| `applyStandards()` | loads template data from `data/templates/*.cdx.json` and merges standard definitions and metadata licenses into the current BOM |
-| `applyMetadata()` | converts `SrcFile` and evidence paths to relative values, then adds `cdx:bom:componentTypes`, `cdx:bom:componentNamespaces`, and `cdx:bom:componentSrcFiles` metadata properties |
-| `applyContainerInventoryMetadata()` | computes `cdx:container:unpackagedExecutableCount` and `cdx:container:unpackagedSharedLibraryCount` from the assembled component list |
-| `applyFormulation()` | attaches once-per-BOM formulation entries, including build and source context collected earlier in the pipeline |
-| `applyReleaseNotes()` | when `--include-release-notes` is enabled, computes release notes from git context and stores them on the cdxgen tool component |
-| `applySpecVersionCompatibility()` | strips or reshapes fields that are newer than the requested output spec version, including 1.6/1.7-only metadata and some crypto/evidence fields |
-| `validateTlpClassification()` | checks TLP labeling rules before output leaves the generator |
-| `annotate()` | creates or extends CycloneDX annotations for metadata and other derived context when the document spec version is high enough |
+| Function                            | Implementation detail from the current code                                                                                                                                                |
+| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `filterBom()`                       | removes excluded inventory types, filters on confidence/technique/purl/property matches, rebuilds retained `dependencies[]`, and can emit incomplete `compositions[]` for filtered outputs |
+| `applyStandards()`                  | loads template data from `data/templates/*.cdx.json` and merges standard definitions and metadata licenses into the current BOM                                                            |
+| `applyMetadata()`                   | converts `SrcFile` and evidence paths to relative values, then adds `cdx:bom:componentTypes`, `cdx:bom:componentNamespaces`, and `cdx:bom:componentSrcFiles` metadata properties           |
+| `applyContainerInventoryMetadata()` | computes `cdx:container:unpackagedExecutableCount` and `cdx:container:unpackagedSharedLibraryCount` from the assembled component list                                                      |
+| `applyFormulation()`                | attaches once-per-BOM formulation entries, including build and source context collected earlier in the pipeline                                                                            |
+| `applyReleaseNotes()`               | when `--include-release-notes` is enabled, computes release notes from git context and stores them on the cdxgen tool component                                                            |
+| `applySpecVersionCompatibility()`   | strips or reshapes fields that are newer than the requested output spec version, including 1.6/1.7-only metadata and some crypto/evidence fields                                           |
+| `validateTlpClassification()`       | checks TLP labeling rules before output leaves the generator                                                                                                                               |
+| `annotate()`                        | creates or extends CycloneDX annotations for metadata and other derived context when the document spec version is high enough                                                              |
 
 If you are trying to understand why a component disappeared, why formulation only appears once, or why paths were normalised, this is the phase to inspect.
 
@@ -241,37 +241,37 @@ createBom()
    +--> write outputs
 ```
 
-| Stage | What happens |
-|---|---|
+| Stage                | What happens                                                                                                        |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------- |
 | CycloneDX validation | `validateBom(bomNSData.bomJson)` runs when `options.validate` is true; failure exits the CLI with a non-zero status |
-| SPDX conversion | `convertCycloneDxToSpdx()` runs only after a CycloneDX BOM exists and SPDX output was requested |
-| SPDX validation | `validateSpdx()` runs on the converted SPDX document when validation is enabled |
-| dry-run interaction | dry-run blocks SPDX conversion output because the export path is intentionally read-only |
+| SPDX conversion      | `convertCycloneDxToSpdx()` runs only after a CycloneDX BOM exists and SPDX output was requested                     |
+| SPDX validation      | `validateSpdx()` runs on the converted SPDX document when validation is enabled                                     |
+| dry-run interaction  | dry-run blocks SPDX conversion output because the export path is intentionally read-only                            |
 
 ## Related execution modes
 
 The shared pipeline above is often combined with adjacent features.
 
-| Feature or mode | Where it hooks in |
-|---|---|
-| `--dry-run` | constrains side effects before and during generation |
-| `--bom-audit` | evaluates the generated BOM after post-processing |
-| predictive dependency audit | runs when BOM audit selects supported upstream targets |
-| `--validate` | validates the final BOM before optional export or submission |
-| SPDX export | converts the generated and optionally validated CycloneDX BOM |
+| Feature or mode             | Where it hooks in                                             |
+| --------------------------- | ------------------------------------------------------------- |
+| `--dry-run`                 | constrains side effects before and during generation          |
+| `--bom-audit`               | evaluates the generated BOM after post-processing             |
+| predictive dependency audit | runs when BOM audit selects supported upstream targets        |
+| `--validate`                | validates the final BOM before optional export or submission  |
+| SPDX export                 | converts the generated and optionally validated CycloneDX BOM |
 
 Those features are documented in more depth in [Feature Coverage Map](FEATURE_COVERAGE.md).
 
 ## Where different classes of errors originate
 
-| What you see | Most likely phase | What it usually means |
-|---|---|---|
-| missing SDK or package manager | environment preparation | the machine or image lacks a required tool |
-| no manifests found | discovery | the directory is wrong, filtering is too broad, or the type was misdetected |
-| shallow dependency tree | per-language assembly | the package-manager command failed or only a lockfile was available |
-| duplicate or missing components after merge | multi-type merge | overlapping scans produced duplicates and dedupe logic collapsed them |
-| components unexpectedly absent in final JSON | post-processing | filters or spec-compatibility changes removed or transformed them |
-| audit findings after a clean build | audit or validation stage | the BOM was generated but policy or compliance checks flagged it |
+| What you see                                 | Most likely phase         | What it usually means                                                       |
+| -------------------------------------------- | ------------------------- | --------------------------------------------------------------------------- |
+| missing SDK or package manager               | environment preparation   | the machine or image lacks a required tool                                  |
+| no manifests found                           | discovery                 | the directory is wrong, filtering is too broad, or the type was misdetected |
+| shallow dependency tree                      | per-language assembly     | the package-manager command failed or only a lockfile was available         |
+| duplicate or missing components after merge  | multi-type merge          | overlapping scans produced duplicates and dedupe logic collapsed them       |
+| components unexpectedly absent in final JSON | post-processing           | filters or spec-compatibility changes removed or transformed them           |
+| audit findings after a clean build           | audit or validation stage | the BOM was generated but policy or compliance checks flagged it            |
 
 ## Related pages
 

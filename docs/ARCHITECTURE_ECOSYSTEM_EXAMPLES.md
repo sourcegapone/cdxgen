@@ -42,14 +42,14 @@ createBom()
 
 ### What it actually does
 
-| Implementation detail | Current behavior |
-|---|---|
-| archive support | handles `.war` and `.jar` inputs directly, extracting packages before BOM assembly |
-| project discovery | scans for `pom.xml`, `build.gradle*`, and `build.mill` |
-| framework-specific behavior | detects Quarkus by parsing early POM files and switches strategy |
-| tool invocation | can use the CycloneDX Maven plugin or Maven dependency-tree style collection |
-| deep analysis support | collects JAR namespace mappings when class resolution or deep mode is enabled |
-| BOM assembly | returns through `buildBomNSData(options, pkgList, "maven", context)` |
+| Implementation detail       | Current behavior                                                                   |
+| --------------------------- | ---------------------------------------------------------------------------------- |
+| archive support             | handles `.war` and `.jar` inputs directly, extracting packages before BOM assembly |
+| project discovery           | scans for `pom.xml`, `build.gradle*`, and `build.mill`                             |
+| framework-specific behavior | detects Quarkus by parsing early POM files and switches strategy                   |
+| tool invocation             | can use the CycloneDX Maven plugin or Maven dependency-tree style collection       |
+| deep analysis support       | collects JAR namespace mappings when class resolution or deep mode is enabled      |
+| BOM assembly                | returns through `buildBomNSData(options, pkgList, "maven", context)`               |
 
 ### ASCII trace
 
@@ -77,14 +77,14 @@ Java demonstrates why cdxgen keeps ecosystem orchestration inside `create<Langua
 
 ### What it actually does
 
-| Implementation detail | Current behavior |
-|---|---|
-| container-aware path | when scanning OCI or OS-like targets, it can enumerate `package.json` files inside extracted content |
-| source analysis | optionally performs Babel-based import/export analysis for non-container source trees |
-| AI and MCP inventory | can collect AI skill, instruction, and MCP inventory alongside package data |
-| manifest support | scans `package.json`, `package-lock.json`, `yarn.lock`, `pnpm-lock.yaml`, `bower.json`, and `*min.js` |
-| install heuristics | may run a guarded install path for smaller projects missing lockfiles, always with `--ignore-scripts` |
-| BOM assembly | returns through `buildBomNSData(options, pkgList, "npm", context)` |
+| Implementation detail | Current behavior                                                                                      |
+| --------------------- | ----------------------------------------------------------------------------------------------------- |
+| container-aware path  | when scanning OCI or OS-like targets, it can enumerate `package.json` files inside extracted content  |
+| source analysis       | optionally performs Babel-based import/export analysis for non-container source trees                 |
+| AI and MCP inventory  | can collect AI skill, instruction, and MCP inventory alongside package data                           |
+| manifest support      | scans `package.json`, `package-lock.json`, `yarn.lock`, `pnpm-lock.yaml`, `bower.json`, and `*min.js` |
+| install heuristics    | may run a guarded install path for smaller projects missing lockfiles, always with `--ignore-scripts` |
+| BOM assembly          | returns through `buildBomNSData(options, pkgList, "npm", context)`                                    |
 
 ### Mermaid example flow
 
@@ -110,16 +110,16 @@ Node.js shows how one generator can combine several layers of evidence: static s
 
 ### What it actually does
 
-| Implementation detail | Current behavior |
-|---|---|
-| alternate front door | short-circuits into `createPixiBom()` when Pixi files are present |
-| lockfile support | understands Poetry, PDM, uv, and generic `pylock*.toml` inputs |
-| requirements support | falls back to `requirements*.txt` and `requirements/*.txt` when lockfile-first paths are absent |
-| metadata shaping | extracts a parent component from `pyproject.toml` and attaches `SrcFile` metadata |
-| deeper tree option | can build a frozen dependency tree when installs are allowed |
-| safer fallback | can use export-based flows such as `poetry export` or `pdm export` when install-time behavior is not desired |
-| formulation support | collects formulation items from deeper Python environment resolution |
-| BOM assembly | returns through `buildBomNSData(options, pkgList, "pypi", context)` |
+| Implementation detail | Current behavior                                                                                             |
+| --------------------- | ------------------------------------------------------------------------------------------------------------ |
+| alternate front door  | short-circuits into `createPixiBom()` when Pixi files are present                                            |
+| lockfile support      | understands Poetry, PDM, uv, and generic `pylock*.toml` inputs                                               |
+| requirements support  | falls back to `requirements*.txt` and `requirements/*.txt` when lockfile-first paths are absent              |
+| metadata shaping      | extracts a parent component from `pyproject.toml` and attaches `SrcFile` metadata                            |
+| deeper tree option    | can build a frozen dependency tree when installs are allowed                                                 |
+| safer fallback        | can use export-based flows such as `poetry export` or `pdm export` when install-time behavior is not desired |
+| formulation support   | collects formulation items from deeper Python environment resolution                                         |
+| BOM assembly          | returns through `buildBomNSData(options, pkgList, "pypi", context)`                                          |
 
 ### ASCII trace
 
@@ -147,15 +147,15 @@ The .NET path lives in `createCsharpBom()`. It is the best example of a generato
 
 ### What it actually does
 
-| Implementation detail | Current behavior |
-|---|---|
-| file discovery | scans `*.sln`, `*.{cs,vb,fs,ts,hmi,plc}proj`, `packages.config`, `project.assets.json`, `packages.lock.json`, `paket.lock`, and `*.nupkg` |
-| build-tool hinting | can inspect target frameworks and print framework suggestions |
-| restore strategy | runs `dotnet restore`, `nuget restore`, or `msbuild -t:restore` depending on project type and platform |
-| compatibility guidance | prints targeted advice when SDK, NuGet, or private feed problems are detected |
-| asset parsing | reads restored assets and lockfiles to build package and dependency data |
-| package fallback | can parse `.nupkg` files when restored assets are absent |
-| BOM assembly | returns through `buildBomNSData(options, pkgList, "nuget", context)` |
+| Implementation detail  | Current behavior                                                                                                                          |
+| ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| file discovery         | scans `*.sln`, `*.{cs,vb,fs,ts,hmi,plc}proj`, `packages.config`, `project.assets.json`, `packages.lock.json`, `paket.lock`, and `*.nupkg` |
+| build-tool hinting     | can inspect target frameworks and print framework suggestions                                                                             |
+| restore strategy       | runs `dotnet restore`, `nuget restore`, or `msbuild -t:restore` depending on project type and platform                                    |
+| compatibility guidance | prints targeted advice when SDK, NuGet, or private feed problems are detected                                                             |
+| asset parsing          | reads restored assets and lockfiles to build package and dependency data                                                                  |
+| package fallback       | can parse `.nupkg` files when restored assets are absent                                                                                  |
+| BOM assembly           | returns through `buildBomNSData(options, pkgList, "nuget", context)`                                                                      |
 
 ### Mermaid example flow
 

@@ -40,11 +40,11 @@ flowchart TD
 
 ## Diagnostic commands worth memorising
 
-| Goal | Command |
-|---|---|
-| show generator decisions | `CDXGEN_DEBUG_MODE=debug cdxgen -t java -o bom.json .` |
-| show extra trace output | `CDXGEN_DEBUG_MODE=verbose cdxgen -t java -o bom.json .` |
-| validate final BOM | `cdx-validate -i bom.json` |
+| Goal                             | Command                                                    |
+| -------------------------------- | ---------------------------------------------------------- |
+| show generator decisions         | `CDXGEN_DEBUG_MODE=debug cdxgen -t java -o bom.json .`     |
+| show extra trace output          | `CDXGEN_DEBUG_MODE=verbose cdxgen -t java -o bom.json .`   |
+| validate final BOM               | `cdx-validate -i bom.json`                                 |
 | test an image scan after pulling | `docker pull <image> && cdxgen -t oci -o bom.json <image>` |
 
 ## Symptom: nothing was generated
@@ -53,11 +53,11 @@ flowchart TD
 
 This normally points to one of three causes:
 
-| Cause | Typical clue |
-|---|---|
-| wrong path | the directory does not contain the files you thought it did |
-| wrong type selection | auto-detection missed the right ecosystem or `--exclude-type` removed it |
-| filters removed everything | discovery happened, but no eligible components survived |
+| Cause                      | Typical clue                                                             |
+| -------------------------- | ------------------------------------------------------------------------ |
+| wrong path                 | the directory does not contain the files you thought it did              |
+| wrong type selection       | auto-detection missed the right ecosystem or `--exclude-type` removed it |
+| filters removed everything | discovery happened, but no eligible components survived                  |
 
 ### What to check
 
@@ -77,11 +77,11 @@ Some ecosystems require the native toolchain for deep or transitive dependency r
 
 ### What to do next
 
-| Situation | Best next step |
-|---|---|
-| local machine lacks the SDK | install the SDK or run inside a cdxgen image |
-| the project needs a legacy SDK version | use the matching language-specific image |
-| the environment is locked down | use lockfile-only mode where possible and document the limitation |
+| Situation                              | Best next step                                                    |
+| -------------------------------------- | ----------------------------------------------------------------- |
+| local machine lacks the SDK            | install the SDK or run inside a cdxgen image                      |
+| the project needs a legacy SDK version | use the matching language-specific image                          |
+| the environment is locked down         | use lockfile-only mode where possible and document the limitation |
 
 ### Example
 
@@ -95,13 +95,13 @@ For older Java or .NET targets, consult the container image selection guidance i
 
 ### Common reasons
 
-| Reason | Why it slows down |
-|---|---|
-| dependency installation | network and build steps take time |
-| registry metadata enrichment | many outbound requests |
-| deep mode or evidence mode | extra source analysis and slicing |
-| first-time image scanning | Trivy and image export work dominate runtime |
-| huge monorepo | many manifests and multiple ecosystem passes |
+| Reason                       | Why it slows down                            |
+| ---------------------------- | -------------------------------------------- |
+| dependency installation      | network and build steps take time            |
+| registry metadata enrichment | many outbound requests                       |
+| deep mode or evidence mode   | extra source analysis and slicing            |
+| first-time image scanning    | Trivy and image export work dominate runtime |
+| huge monorepo                | many manifests and multiple ecosystem passes |
 
 ### Quick mitigations
 
@@ -154,20 +154,20 @@ incomplete OS or container inventory
 
 ### Container-specific checks
 
-| Check | Why it matters |
-|---|---|
-| image is pulled locally | avoids lookup confusion |
-| `cdxgen-plugins-bin` is installed | provides Trivy and other heavy helpers |
-| image reference is fully qualified | reduces ambiguity |
-| first run warmed caches | prevents repeated cold-start work |
+| Check                              | Why it matters                         |
+| ---------------------------------- | -------------------------------------- |
+| image is pulled locally            | avoids lookup confusion                |
+| `cdxgen-plugins-bin` is installed  | provides Trivy and other heavy helpers |
+| image reference is fully qualified | reduces ambiguity                      |
+| first run warmed caches            | prevents repeated cold-start work      |
 
 ### Host and OBOM-specific checks
 
-| Platform | First thing to verify |
-|---|---|
-| Linux | plugin path and shell-mode osquery invocation |
-| macOS | Full Disk Access and matching plugin architecture |
-| Windows | Administrator or service-account privileges |
+| Platform | First thing to verify                             |
+| -------- | ------------------------------------------------- |
+| Linux    | plugin path and shell-mode osquery invocation     |
+| macOS    | Full Disk Access and matching plugin architecture |
+| Windows  | Administrator or service-account privileges       |
 
 For macOS-specific details, see [macOS OBOM troubleshooting](OBOM_MACOS_TROUBLESHOOTING.md).
 
@@ -175,11 +175,11 @@ For macOS-specific details, see [macOS OBOM troubleshooting](OBOM_MACOS_TROUBLES
 
 ### Common root causes
 
-| Problem | What it often means |
-|---|---|
-| duplicate `bom-ref` values | a merge or external processing step introduced collisions |
-| invalid cryptographic-asset structure | a custom component was assembled incorrectly |
-| malformed purl or OID | package identity or crypto metadata was built incorrectly |
+| Problem                               | What it often means                                       |
+| ------------------------------------- | --------------------------------------------------------- |
+| duplicate `bom-ref` values            | a merge or external processing step introduced collisions |
+| invalid cryptographic-asset structure | a custom component was assembled incorrectly              |
+| malformed purl or OID                 | package identity or crypto metadata was built incorrectly |
 
 ### What to do
 
@@ -193,12 +193,12 @@ This usually means post-processing changed the output after generation succeeded
 
 ### Most likely causes
 
-| Cause | What to inspect |
-|---|---|
-| `--required-only` | only direct dependencies remain |
-| `--filter` or `--only` | string-based filtering removed components |
-| `--min-confidence` | low-confidence source-analysis results were excluded |
-| spec-version shaping | fields may be transformed for compatibility |
+| Cause                  | What to inspect                                      |
+| ---------------------- | ---------------------------------------------------- |
+| `--required-only`      | only direct dependencies remain                      |
+| `--filter` or `--only` | string-based filtering removed components            |
+| `--min-confidence`     | low-confidence source-analysis results were excluded |
+| spec-version shaping   | fields may be transformed for compatibility          |
 
 ### Recovery pattern
 
@@ -231,12 +231,12 @@ If you want a repeatable approach, use this sequence.
 
 It is usually time to open an issue or discussion when you can provide:
 
-| Useful detail | Why maintainers need it |
-|---|---|
-| exact command | reproduces the option set |
-| debug output | shows detection and execution paths |
-| redacted manifest or lockfile sample | reproduces parser behavior |
-| platform and runtime details | clarifies SDK and plugin expectations |
+| Useful detail                        | Why maintainers need it               |
+| ------------------------------------ | ------------------------------------- |
+| exact command                        | reproduces the option set             |
+| debug output                         | shows detection and execution paths   |
+| redacted manifest or lockfile sample | reproduces parser behavior            |
+| platform and runtime details         | clarifies SDK and plugin expectations |
 
 ## Related pages
 

@@ -192,24 +192,24 @@ CDXGEN_THINK_MODE=true cdx-audit --bom bom.json --max-targets 10
 
 ## CLI reference
 
-| Option                        | Description                                                                            |
-| ----------------------------- | -------------------------------------------------------------------------------------- |
-| `--bom`                       | Path to a single CycloneDX JSON BOM                                                    |
-| `--bom-dir`                   | Directory containing CycloneDX JSON BOMs                                               |
-| `--direct-bom-audit`          | Evaluate the supplied BOM(s) directly with the BOM audit rule engine                   |
-| `--workspace-dir`             | Reuse git clones and cached child SBOMs between runs                                   |
-| `--reports-dir`               | Persist generated child SBOMs and per-target findings                                  |
-| `--rules-dir`                 | Merge additional YAML rules into direct BOM audit and predictive child-SBOM evaluation |
-| `--report`                    | Output format: `console`, `json`, or `sarif`                                           |
-| `--report-file`, `-o`         | Write the final report to a file instead of stdout                                     |
-| `--categories`                | Comma-separated categories for predictive child-SBOM analysis or direct BOM audit      |
-| `--min-severity`              | Minimum target severity (predictive) or finding severity (direct BOM audit) to render  |
-| `--fail-severity`             | Exit with code `3` when any target or direct BOM finding reaches this severity         |
-| `--max-targets`               | Safety limit for the number of unique purls analyzed                                   |
-| `--scope`                     | Target selection scope: `all` or `required`                                            |
-| `--include-trusted`           | Include targets already marked with trusted publishing metadata                        |
-| `--only-trusted`              | Restrict analysis to trusted-publishing-backed targets                                 |
-| `--prioritize-direct-runtime` | Keep direct runtime dependencies ahead of less actionable targets (enabled by default) |
+| Option                        | Description                                                                                          |
+| ----------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `--bom`                       | Path to a single CycloneDX JSON BOM                                                                  |
+| `--bom-dir`                   | Directory containing CycloneDX JSON BOMs                                                             |
+| `--direct-bom-audit`          | Evaluate the supplied BOM(s) directly with the BOM audit rule engine                                 |
+| `--workspace-dir`             | Reuse git clones and cached child SBOMs between runs                                                 |
+| `--reports-dir`               | Persist generated child SBOMs and per-target findings                                                |
+| `--rules-dir`                 | Merge additional YAML rules into direct BOM audit and predictive child-SBOM evaluation               |
+| `--report`                    | Output format: `console`, `json`, or `sarif`                                                         |
+| `--report-file`, `-o`         | Write the final report to a file instead of stdout                                                   |
+| `--categories`                | Comma-separated categories for predictive child-SBOM analysis or direct BOM audit                    |
+| `--min-severity`              | Minimum target severity (predictive) or finding severity (direct BOM audit) to render                |
+| `--fail-severity`             | Exit with code `3` when any target or direct BOM finding reaches this severity                       |
+| `--max-targets`               | Safety limit for the number of unique purls analyzed                                                 |
+| `--scope`                     | Target selection scope: `all` or `required`                                                          |
+| `--include-trusted`           | Include targets already marked with trusted publishing metadata                                      |
+| `--only-trusted`              | Restrict analysis to trusted-publishing-backed targets                                               |
+| `--prioritize-direct-runtime` | Keep direct runtime dependencies ahead of less actionable targets (enabled by default)               |
 | `--allowlist-file`            | Add a JSON array or newline-delimited purl-prefix allowlist on top of the built-in well-known filter |
 
 ## Exit behavior

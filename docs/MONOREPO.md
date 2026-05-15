@@ -43,11 +43,11 @@ cdxgen -t java -t js -t py -o bom.json .
 
 ### When this approach works well
 
-| Signal | Why it is a good fit |
-|---|---|
-| one release process | the combined graph mirrors how the software ships |
-| shared root manifests | discovery from the repository root is natural |
-| downstream tooling expects one BOM | simplifies later processing |
+| Signal                             | Why it is a good fit                              |
+| ---------------------------------- | ------------------------------------------------- |
+| one release process                | the combined graph mirrors how the software ships |
+| shared root manifests              | discovery from the repository root is natural     |
+| downstream tooling expects one BOM | simplifies later processing                       |
 
 ## Strategy 2: scan per service or per language
 
@@ -61,11 +61,11 @@ cdxgen -t py -o bom-service-c.json services/service-c
 
 ### Why this often scales better
 
-| Benefit | Why it matters |
-|---|---|
-| smaller output files | easier to inspect and validate |
-| clearer ownership | teams can own their own BOMs |
-| faster reruns | one changed service does not force a full repository rescan |
+| Benefit              | Why it matters                                              |
+| -------------------- | ----------------------------------------------------------- |
+| smaller output files | easier to inspect and validate                              |
+| clearer ownership    | teams can own their own BOMs                                |
+| faster reruns        | one changed service does not force a full repository rescan |
 
 ## Strategy 3: use include and exclude patterns to shape discovery
 
@@ -73,11 +73,11 @@ When you do want a repository-root scan, discovery controls are the main way to 
 
 ### Discovery controls
 
-| Option | Best use |
-|---|---|
-| `--include-regex` | limit scanning to a subset of manifests |
-| `--exclude` | remove folders such as fixtures, examples, vendored code, or generated artifacts |
-| `--exclude-type` | skip an ecosystem you do not want represented |
+| Option            | Best use                                                                         |
+| ----------------- | -------------------------------------------------------------------------------- |
+| `--include-regex` | limit scanning to a subset of manifests                                          |
+| `--exclude`       | remove folders such as fixtures, examples, vendored code, or generated artifacts |
+| `--exclude-type`  | skip an ecosystem you do not want represented                                    |
 
 ### Example
 
@@ -94,12 +94,12 @@ cdxgen \
 
 If the same repositories are scanned often, the best optimisation is often not a new flag. It is changing where and how the scan runs.
 
-| Approach | Why it helps |
-|---|---|
-| scan only changed services | avoids full monorepo work |
-| keep cache directories persistent | helps Trivy and package managers |
-| commit lockfiles consistently | reduces install-time guesswork |
-| use server mode for batches | avoids repeated Node.js startup cost |
+| Approach                          | Why it helps                         |
+| --------------------------------- | ------------------------------------ |
+| scan only changed services        | avoids full monorepo work            |
+| keep cache directories persistent | helps Trivy and package managers     |
+| commit lockfiles consistently     | reduces install-time guesswork       |
+| use server mode for batches       | avoids repeated Node.js startup cost |
 
 ## Understanding recursion
 
@@ -194,11 +194,11 @@ Use this sequence if you want a calm rollout.
 
 ## Common mistakes
 
-| Mistake | Better alternative |
-|---|---|
-| scanning the whole monorepo first in deep mode | start with a manifest-focused slice |
-| relying on broad excludes only | combine include and exclude controls |
-| merging unrelated deployables into one BOM by default | split by service first |
+| Mistake                                                               | Better alternative                          |
+| --------------------------------------------------------------------- | ------------------------------------------- |
+| scanning the whole monorepo first in deep mode                        | start with a manifest-focused slice         |
+| relying on broad excludes only                                        | combine include and exclude controls        |
+| merging unrelated deployables into one BOM by default                 | split by service first                      |
 | treating infrastructure folders as product dependencies automatically | exclude or scan them separately with intent |
 
 ## Related pages
