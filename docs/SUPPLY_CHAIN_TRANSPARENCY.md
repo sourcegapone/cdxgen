@@ -234,11 +234,11 @@ hbom \
 
 These three views answer different hardening questions:
 
-| Surface | Useful audit focus | Typical question |
-| --- | --- | --- |
-| repository workflows | `ci-permission`, `dependency-source` | Are our pipelines granting more power than the job needs? |
-| runner image or root filesystem | `rootfs-hardening`, `container-risk` | Is the build environment drifting away from our baseline? |
-| live host | `host` | Does the machine posture still match what we think we deployed? |
+| Surface                         | Useful audit focus                   | Typical question                                                |
+| ------------------------------- | ------------------------------------ | --------------------------------------------------------------- |
+| repository workflows            | `ci-permission`, `dependency-source` | Are our pipelines granting more power than the job needs?       |
+| runner image or root filesystem | `rootfs-hardening`, `container-risk` | Is the build environment drifting away from our baseline?       |
+| live host                       | `host`                               | Does the machine posture still match what we think we deployed? |
 
 ## A simple developer-facing policy snippet
 
